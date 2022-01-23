@@ -1,0 +1,9 @@
+/**
+ * skylark-data-files - The skylark file system library
+ * @author Hudaokeji Co.,Ltd
+ * @version v0.9.0
+ * @link www.skylarkjs.org
+ * @license MIT
+ */
+define(["skylark-langx-binary/buffer","./file-type"],function(e,t){"use strict";class i{constructor(e,i,s,r,m,n,o){this.dev=0,this.ino=0,this.rdev=0,this.nlink=1,this.blksize=4096,this.uid=0,this.gid=0,this.fileData=null,this.size=i;let h=0;if("number"!=typeof r&&(r=h=Date.now()),"number"!=typeof m&&(h||(h=Date.now()),m=h),"number"!=typeof n&&(h||(h=Date.now()),n=h),"number"!=typeof o&&(h||(h=Date.now()),o=h),this.atimeMs=r,this.ctimeMs=n,this.mtimeMs=m,this.birthtimeMs=o,s)this.mode=s;else switch(e){case t.FILE:this.mode=420;break;case t.DIRECTORY:default:this.mode=511}this.blocks=Math.ceil(i/512),this.mode<4096&&(this.mode|=e)}static fromBuffer(e){const t=e.readUInt32LE(0),s=e.readUInt32LE(4),r=e.readDoubleLE(8),m=e.readDoubleLE(16),n=e.readDoubleLE(24);return new i(61440&s,t,4095&s,r,m,n)}static clone(e){return new i(61440&e.mode,e.size,4095&e.mode,e.atimeMs,e.mtimeMs,e.ctimeMs,e.birthtimeMs)}get atime(){return new Date(this.atimeMs)}get mtime(){return new Date(this.mtimeMs)}get ctime(){return new Date(this.ctimeMs)}get birthtime(){return new Date(this.birthtimeMs)}toBuffer(){const t=e.alloc(32);return t.writeUInt32LE(this.size,0),t.writeUInt32LE(this.mode,4),t.writeDoubleLE(this.atime.getTime(),8),t.writeDoubleLE(this.mtime.getTime(),16),t.writeDoubleLE(this.ctime.getTime(),24),t}isFile(){return(61440&this.mode)===t.FILE}isDirectory(){return(61440&this.mode)===t.DIRECTORY}isSymbolicLink(){return(61440&this.mode)===t.SYMLINK}chmod(e){this.mode=61440&this.mode|e}isSocket(){return!1}isBlockDevice(){return!1}isCharacterDevice(){return!1}isFIFO(){return!1}}return files.Stats=i});
+//# sourceMappingURL=sourcemaps/stats.js.map

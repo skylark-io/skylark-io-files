@@ -1,0 +1,9 @@
+/**
+ * skylark-data-files - The skylark file system library
+ * @author Hudaokeji Co.,Ltd
+ * @version v0.9.0
+ * @link www.skylarkjs.org
+ * @license MIT
+ */
+define([],function(){"use strict";function n(n,r,t){return n.toString("ascii",r,r+t).trim()}function r(n,r){const t=n.slice(r),e=new SystemUseEntry(t);switch(e.signatureWord()){case 17221:return new CEEntry(t);case 20548:return new PDEntry(t);case 21328:return new SPEntry(t);case 21332:return new STEntry(t);case 17746:return new EREntry(t);case 17747:return new ESEntry(t);case 20568:return new PXEntry(t);case 20558:return new PNEntry(t);case 21324:return new SLEntry(t);case 20045:return new NMEntry(t);case 17228:return new CLEntry(t);case 20556:return new PLEntry(t);case 21061:return new REEntry(t);case 21574:return new TFEntry(t);case 21318:return new SFEntry(t);case 21074:return new RREntry(t);default:return e}}return{getASCIIString:n,getJolietString:function(n,r,t){if(1===t)return String.fromCharCode(n[r]);const e=Math.floor(t/2),s=new Array(e);for(let t=0;t<e;t++){const e=r+(t<<1);s[t]=String.fromCharCode(n[e+1]|n[e]<<8)}return s.join("")},getDate:function(r,t){const e=parseInt(n(r,t,4),10),s=parseInt(n(r,t+4,2),10),c=parseInt(n(r,t+6,2),10),a=parseInt(n(r,t+8,2),10),u=parseInt(n(r,t+10,2),10),o=parseInt(n(r,t+12,2),10),i=parseInt(n(r,t+14,2),10);return new Date(e,s,c,a,u,o,100*i)},getShortFormDate:function(n,r){const t=n[r],e=n[r+1],s=n[r+2],c=n[r+3],a=n[r+4],u=n[r+5];return new Date(t,e-1,s,c,a,u)},constructSystemUseEntry:r,constructSystemUseEntries:function(n,t,e,s){e-=4;let c=new Array;for(;t<e;){const e=r(n,t),a=e.length();if(0===a)return c;if(t+=a,e instanceof STEntry)break;e instanceof CEEntry?c=c.concat(e.getEntries(s)):c.push(e)}return c}}});
+//# sourceMappingURL=../../sourcemaps/providers/iso/misc.js.map
