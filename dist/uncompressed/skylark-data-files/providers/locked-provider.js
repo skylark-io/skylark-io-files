@@ -1,4 +1,7 @@
-define(['./mutex'], function (Mutex) {
+define([
+    "../files",
+    './mutex'
+], function (files,Mutex) {
     'use strict';
     /**
      * This class serializes access to an underlying async filesystem.
@@ -304,5 +307,5 @@ define(['./mutex'], function (Mutex) {
         }
     }
 
-    return LockedProvider;
+    return files.providers.LockedProvider = LockedProvider;
 });

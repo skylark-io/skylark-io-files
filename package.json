@@ -29,9 +29,31 @@
     "skylark-langx-async": "https://github.com/skylark-langx/skylark-langx-async",
     "skylark-langx-paths": "https://github.com/skylark-langx/skylark-langx-paths",
     "skylark-langx-binary": "https://github.com/skylark-langx/skylark-langx-binary",
-    "skylark-data-compression": "https://github.com/skylark-data/skylark-data-compression"
+    "skylark-data-compression": "https://github.com/skylark-data/skylark-data-compression",
+    "skylark-data-collections": "https://github.com/skylark-data/skylark-data-collections"
   },
   "engines": {
     "node": ">=0.8.0"
+  },
+  "skylarkjs": {
+    "directories": {
+      "dependencies": "./node_modules"
+    },
+    "secondaries": {},
+    "build": {
+      "prepare": {
+        "texttojs": [
+          "html",
+          "json",
+          "css"
+        ],
+        "jsxtojs": false,
+        "es6toamd": false,
+        "cjstoamd": false
+      },
+      "bundles": {
+        "all": true
+      }
+    }
   }
 }

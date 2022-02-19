@@ -2,14 +2,15 @@ define([
     "skylark-langx-funcs/defer",
     "skylark-langx-binary/buffer",
     "skylark-langx-paths",
+    "../registry",
     "../base-provider",
     '../../stats',
     '../../file-type',
     '../../file-error',
     '../../error-codes',
     '../../utils',
-    '../../dropbox-file'
-], function (setImmediate,Buffer,paths, BaseProvider, Stats,FileType,FileError, ErrorCodes, utils,DropboxFile) {
+    './dropbox-file'
+], function (setImmediate,Buffer,paths, registry,BaseProvider, Stats,FileType,FileError, ErrorCodes, utils,DropboxFile) {
     'use strict';
 
     const { arrayBuffer2Buffer, buffer2ArrayBuffer } =  utils;
@@ -155,17 +156,7 @@ define([
             }
         });
     }
-    class DropboxFile extends PreloadFile {
-        constructor(_fs, _path, _flag, _stat, contents) {
-            super(_fs, _path, _flag, _stat, contents);
-        }
-        sync(cb) {
-            this._fs._syncFile(this.getPath(), this.getBuffer(), cb);
-        }
-        close(cb) {
-            this.sync(cb);
-        }
-    }
+
     /**
      * A read/write file system backed by Dropbox cloud storage.
      *

@@ -1,13 +1,13 @@
 define([
     "skylark-langx-binary/buffer",
-    "skylark-langx-paths/path",
+    "skylark-langx-paths",
     "../files",
     "../error-codes",
     '../file-error',
     '../action-type',
     '../file-flag',
     '../utils'
-], function (Bufer,path, ErrorCodes, FileError, ActionType, FileFlag, utils) {
+], function (Bufer,paths, files,ErrorCodes, FileError, ActionType, FileFlag, utils) {
     'use strict';
 
     const { fail } = utils;
@@ -45,12 +45,12 @@ define([
                     switch (flag.pathNotExistsAction()) {
                         case ActionType.CREATE_FILE:
                             // Ensure parent exists.
-                            return this.stat(path.dirname(p), false, (e, parentStats) => {
+                            return this.stat(paths.dirname(p), false, (e, parentStats) => {
                                 if (e) {
                                     cb(e);
                                 }
                                 else if (parentStats && !parentStats.isDirectory()) {
-                                    cb(FileError.ENOTDIR(path.dirname(p)));
+                                    cb(FileError.ENOTDIR(paths.dirname(p)));
                                 }
                                 else {
                                     this.createFile(p, flag, mode, cb);
@@ -138,9 +138,9 @@ define([
                 switch (flag.pathNotExistsAction()) {
                     case ActionType.CREATE_FILE:
                         // Ensure parent exists.
-                        const parentStats = this.statSync(path.dirname(p), false);
+                        const parentStats = this.statSync(paths.dirname(p), false);
                         if (!parentStats.isDirectory()) {
-                            throw FileError.ENOTDIR(path.dirname(p));
+                            throw FileError.ENOTDIR(paths.dirname(p));
                         }
                         return this.createFileSync(p, flag, mode);
                     case ActionType.THROW_EXCEPTION:
@@ -212,11 +212,11 @@ define([
             if (this.supportsLinks()) {
                 // The path could contain symlinks. Split up the path,
                 // resolve any symlinks, return the resolved string.
-                const splitPath = p.split(path.sep);
+                const splitPath = p.split(paths.sep);
                 // TODO: Simpler to just pass through file, find sep and such.
                 for (let i = 0; i < splitPath.length; i++) {
                     const addPaths = splitPath.slice(0, i + 1);
-                    splitPath[i] = path.join.apply(null, addPaths);
+                    splitPath[i] = paths.join.apply(null, addPaths);
                 }
             }
             else {
@@ -235,13 +235,13 @@ define([
             if (this.supportsLinks()) {
                 // The path could contain symlinks. Split up the path,
                 // resolve any symlinks, return the resolved string.
-                const splitPath = p.split(path.sep);
+                const splitPath = p.split(paths.sep);
                 // TODO: Simpler to just pass through file, find sep and such.
                 for (let i = 0; i < splitPath.length; i++) {
                     const addPaths = splitPath.slice(0, i + 1);
-                    splitPath[i] = path.join.apply(path, addPaths);
+                    splitPath[i] = paths.join.apply(path, addPaths);
                 }
-                return splitPath.join(path.sep);
+                return splitPath.join(paths.sep);
             }
             else {
                 // No symlinks. We just need to verify that it exists.
@@ -443,5 +443,5 @@ define([
     }
 
 
-    return BaseProvider;
+    return files.providers.BaseProvider = BaseProvider;
 });

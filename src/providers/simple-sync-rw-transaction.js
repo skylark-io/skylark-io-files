@@ -2,7 +2,7 @@ define([
     "../files",
     "../error-codes",
     '../file-error'
-], function (files, ErrorCodes, FileError, FileType) {
+], function (files, ErrorCodes, FileError) {
     'use strict';
 
 
@@ -76,5 +76,5 @@ define([
         }
     }
 
-    return SimpleSyncRWTransaction;
+    return files.providers.SimpleSyncRWTransaction = SimpleSyncRWTransaction;
 });

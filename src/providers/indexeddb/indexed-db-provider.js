@@ -2,11 +2,12 @@ define([
     '../../file-error',
     '../../error-codes',
     '../async-key-value-provider',
+    "../registry",
     '../../utils',
-    "./indexd-db-store",
+    "./indexed-db-store",
     "./indexed-db-ro-transaction",
     "./indexed-db-rw-transaction"
-], function (FileError,ErrorCodes, AsyncKeyValueProvider,  utils,IndexedDBStore,IndexedDBROTransaction,IndexedDBRWTransaction) {
+], function (FileError,ErrorCodes, AsyncKeyValueProvider,  registry,utils,IndexedDBStore,IndexedDBROTransaction,IndexedDBRWTransaction) {
     'use strict';
 
     /**
@@ -76,6 +77,8 @@ define([
     IndexedDBProvider.IndexedDBROTransaction = IndexedDBROTransaction;
     IndexedDBProvider.IndexedDBRWTransaction = IndexedDBRWTransaction;
     IndexedDBProvider.IndexedDBStore = IndexedDBStore;
+
+    registry.add("indexedDB",IndexedDBProvider);
 
     return IndexedDBProvider;
 });

@@ -1,6 +1,6 @@
 define([
     "skylark-langx-binary/buffer",
-    "skylark-langx-paths/path",
+    "skylark-langx-paths",
     "../files",
     "../error-codes",
     '../file-error',
@@ -8,10 +8,10 @@ define([
     '../file-flag',
     '../utils',
     "./base-provider"
-], function (bUFFER,path, ErrorCodes, FileError, ActionType, FileFlag, utils,BaseProvider) {
+], function (Buffer,paths, files,ErrorCodes, FileError, ActionType, FileFlag, utils,BaseProvider) {
     'use strict';
 
-    const { fail } = util;
+    const { fail } = utils;
 
     /**
      * Implements the asynchronous API in terms of the synchronous API.
@@ -137,5 +137,5 @@ define([
     }
 
 
-    return file.providers.SynchronousProvider =  SynchronousProvider;
+    return files.providers.SynchronousProvider =  SynchronousProvider;
 });

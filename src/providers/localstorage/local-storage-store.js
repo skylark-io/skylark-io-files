@@ -58,5 +58,5 @@ define([
     }
 
 
-    return LocalStorageProvider;
+    return LocalStorageStore;
 });

@@ -1,14 +1,14 @@
 define([
-    "skylark-langx-string/generate-uuid",
+    "skylark-langx-strings/generate-uuid",
     "skylark-langx-binary/buffer",
-    "skylark-langx-paths/path",
+    "skylark-langx-paths",
     "../files",
     "../error-codes",
     '../file-error',
     "./base-provider",
     "./synchronous-provider",
     '../utils'
-], function (GenerateRandomID, Buffer,path,files,BaseProvider, SynchronousProvider, ErrorCodes, FileError, FileType,  Inode, utils) {
+], function (GenerateRandomID, Buffer,paths,files,ErrorCodes, FileError,BaseProvider, SynchronousProvider,  utils) {
     'use strict';
 
     const { emptyBuffer } = utils;
@@ -45,7 +45,7 @@ define([
             this.makeRootDirectory();
         }
         renameSync(oldPath, newPath) {
-            const tx = this.store.beginTransaction('readwrite'), oldParent = path.dirname(oldPath), oldName = path.basename(oldPath), newParent = path.dirname(newPath), newName = path.basename(newPath), 
+            const tx = this.store.beginTransaction('readwrite'), oldParent = paths.dirname(oldPath), oldName = paths.basename(oldPath), newParent = paths.dirname(newPath), newName = paths.basename(newPath), 
             // Remove oldPath from parent's directory listing.
             oldDirNode = this.findINode(tx, oldParent), oldDirList = this.getDirListing(tx, oldParent, oldDirNode);
             if (!oldDirList[oldName]) {
@@ -143,7 +143,7 @@ define([
             //       update is required.
             const tx = this.store.beginTransaction('readwrite'), 
             // We use the _findInode helper because we actually need the INode id.
-            fileInodeId = this._findINode(tx, path.dirname(p), path.basename(p)), fileInode = this.getINode(tx, p, fileInodeId), inodeChanged = fileInode.update(stats);
+            fileInodeId = this._findINode(tx, paths.dirname(p), paths.basename(p)), fileInode = this.getINode(tx, p, fileInodeId), inodeChanged = fileInode.update(stats);
             try {
                 // Sync data.
                 tx.put(fileInode.id, data, true);
@@ -191,7 +191,7 @@ define([
                     return dirList[filename];
                 }
                 else {
-                    throw FileError.ENOENT(path.resolve(parent, filename));
+                    throw FileError.ENOENT(paths.resolve(parent, filename));
                 }
             };
             if (parent === '/') {
@@ -205,7 +205,7 @@ define([
                 }
             }
             else {
-                return readDirectory(this.getINode(tx, parent + path.sep + filename, this._findINode(tx, path.dirname(parent), path.basename(parent))));
+                return readDirectory(this.getINode(tx, parent + paths.sep + filename, this._findINode(tx, paths.dirname(parent), paths.basename(parent))));
             }
         }
         /**
@@ -215,7 +215,7 @@ define([
          * @todo memoize/cache
          */
         findINode(tx, p) {
-            return this.getINode(tx, p, this._findINode(tx, path.dirname(p), path.basename(p)));
+            return this.getINode(tx, p, this._findINode(tx, paths.dirname(p), paths.basename(p)));
         }
         /**
          * Given the ID of a node, retrieves the corresponding Inode.
@@ -275,7 +275,7 @@ define([
          * @return The Inode for the new file.
          */
         commitNewFile(tx, p, type, mode, data) {
-            const parentDir = path.dirname(p), fname = path.basename(p), parentNode = this.findINode(tx, parentDir), dirListing = this.getDirListing(tx, parentDir, parentNode), currTime = (new Date()).getTime();
+            const parentDir = paths.dirname(p), fname = paths.basename(p), parentNode = this.findINode(tx, parentDir), dirListing = this.getDirListing(tx, parentDir, parentNode), currTime = (new Date()).getTime();
             // Invariant: The root always exists.
             // If we don't check this prior to taking steps below, we will create a
             // file with name '' in root should p == '/'.
@@ -311,7 +311,7 @@ define([
          * @todo Update mtime.
          */
         removeEntry(p, isDir) {
-            const tx = this.store.beginTransaction('readwrite'), parent = path.dirname(p), parentNode = this.findINode(tx, parent), parentListing = this.getDirListing(tx, parent, parentNode), fileName = path.basename(p);
+            const tx = this.store.beginTransaction('readwrite'), parent = paths.dirname(p), parentNode = this.findINode(tx, parent), parentListing = this.getDirListing(tx, parent, parentNode), fileName = paths.basename(p);
             if (!parentListing[fileName]) {
                 throw FileError.ENOENT(p);
             }
@@ -344,5 +344,5 @@ define([
     }
 
 
-    return SyncKeyValueProvider;
+    return files.providers.SyncKeyValueProvider = SyncKeyValueProvider;
 });

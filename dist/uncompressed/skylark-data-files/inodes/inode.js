@@ -1,7 +1,7 @@
 define([
     "skylark-langx-binary/buffer",
-    '../../stats',
-    '../../file-type'
+    '../stats',
+    '../file-type'
 ], function (Buffer,Stats,FileType) {
     'use strict';
 

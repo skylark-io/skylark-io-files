@@ -1,6 +1,6 @@
 define([
     "../files",
-    './preload-file'
+    '../preload-file'
 ], function (files, PreloadFile) {
     'use strict';
 
@@ -28,6 +28,6 @@ define([
 
 
 
-    return AsyncKeyValueFile;
+    return files.providers.AsyncKeyValueFile = AsyncKeyValueFile;
     
 });

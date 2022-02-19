@@ -1,6 +1,7 @@
 define([
+     "./files",
      "./preload-file"
-], function (PreloadFile) {
+], function (files,PreloadFile) {
     'use strict';
     /**
      * File class for the InMemory and XHR file systems.

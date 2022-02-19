@@ -871,5 +871,5 @@ define([
     }
  
 
-    return UnlockedOverlayProviderextends;
+    return UnlockedOverlayProvider;
 });

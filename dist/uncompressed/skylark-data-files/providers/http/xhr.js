@@ -9,7 +9,7 @@ define([
      * Contains utility methods for performing a variety of tasks with
      * XmlHttpRequest across browsers.
      */
-    const { isIE, emptyBuffer } = util;
+    const { isIE, emptyBuffer } = utils;
 
 
     const xhrIsAvailable = (typeof (XMLHttpRequest) !== "undefined" && XMLHttpRequest !== null);

@@ -1,13 +1,13 @@
 define([
     "skylark-langx-funcs/defer",
     "skylark-langx-binary/buffer",
-    "skylark-langx-paths/path",
+    "skylark-langx-paths",
     "./files",
     './error-codes',
     "./file-error",
     './file-flag',
     './stats'
-], function (setImmediate,Buffer, path, files,ErrorCodes,FileError, FileFlag,  Stats) {
+], function (setImmediate,Buffer, paths, files,ErrorCodes,FileError, FileFlag,  Stats) {
     'use strict';
 
 
@@ -103,7 +103,7 @@ define([
         else if (p === '') {
             throw new FileError(ErrorCodes.EINVAL, 'Path must not be empty.');
         }
-        return path.resolve(p);
+        return paths.resolve(p);
     }
     /**
      * @hidden

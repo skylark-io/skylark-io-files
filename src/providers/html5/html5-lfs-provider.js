@@ -15,7 +15,7 @@ define([
 
     const asyncEach = async.each;
 
-    const { buffer2ArrayBuffer, arrayBuffer2Buffer } = util;
+    const { buffer2ArrayBuffer, arrayBuffer2Buffer } = utils;
 
 
     /**

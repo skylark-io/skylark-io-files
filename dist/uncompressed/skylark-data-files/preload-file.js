@@ -6,7 +6,7 @@ define([
     "./stats",
     "./base-file",
     './utils'
-], function (Buffer,file,ErrorCodes,FileError,Stats,BaseFile, utils) {
+], function (Buffer,files,ErrorCodes,FileError,Stats,BaseFile, utils) {
     'use strict';
 
     ////fs     '../core/node_fs',

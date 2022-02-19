@@ -1,5 +1,5 @@
 define([
-    "skylark-langx-string/generate-uuid",
+    "skylark-langx-strings/generate-uuid",
     "skylark-langx-binary/buffer",
     "skylark-langx-paths",
     "skylark-data-collections/lru-cache",
@@ -652,5 +652,5 @@ define([
     }
 
 
-    return  AsyncKeyValueProvider;
+    return  files.providers.AsyncKeyValueProvider = AsyncKeyValueProvider;
 });

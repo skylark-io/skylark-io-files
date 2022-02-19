@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["./preload-file"],function(e){"use strict";return files.NoSyncFile=class extends e{constructor(e,c,s,n,l){super(e,c,s,n,l)}sync(e){e()}syncSync(){}close(e){e()}closeSync(){}}});
+define(["./files","./preload-file"],function(e,c){"use strict";return e.NoSyncFile=class extends c{constructor(e,c,s,n,l){super(e,c,s,n,l)}sync(e){e()}syncSync(){}close(e){e()}closeSync(){}}});
 //# sourceMappingURL=sourcemaps/no-sync-file.js.map

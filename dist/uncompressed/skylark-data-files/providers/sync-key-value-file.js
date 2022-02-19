@@ -23,6 +23,6 @@ define([
 
 
 
-    return SyncKeyValueFile;
+    return files.providers.SyncKeyValueFile = SyncKeyValueFile;
     
 });

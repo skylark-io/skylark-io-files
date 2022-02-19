@@ -80,7 +80,7 @@ define([
     /**
      * @hidden
      */
-    FileInode.isDirInode =  function isDirInode(inode) {
+    DirInode.isDirInode =  function isDirInode(inode) {
         return !!inode && inode.isDir();
     }
 

@@ -47,36 +47,7 @@ define([
             cb(new FileError(code, message !== null ? message : undefined));
         };
     }
-    /**
-     * @hidden
-     */
-    class IndexedDBROTransaction {
-        constructor(tx, store) {
-            this.tx = tx;
-            this.store = store;
-        }
-        get(key, cb) {
-            try {
-                const r = this.store.get(key);
-                r.onerror = onErrorHandler(cb);
-                r.onsuccess = (event) => {
-                    // IDB returns the value 'undefined' when you try to get keys that
-                    // don't exist. The caller expects this behavior.
-                    const result = event.target.result;
-                    if (result === undefined) {
-                        cb(null, result);
-                    }
-                    else {
-                        // IDB data is stored as an ArrayBuffer
-                        cb(null, arrayBuffer2Buffer(result));
-                    }
-                };
-            }
-            catch (e) {
-                cb(convertError(e));
-            }
-        }
-    }
+
     /**
      * @hidden
      */

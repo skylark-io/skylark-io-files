@@ -8,12 +8,12 @@ define([
     '../../action-type',
     '../../stats',
     '../../file-type',
-    '.././utils',
+    '../../utils',
     './xhr',
     './fetch',
-    '../../inodes/dir-node',
+    '../../inodes/dir-inode',
     '../../inodes/file-index',
-    '../../inodes/file-node',
+    '../../inodes/file-inode',
 
 ], function (async,paths,NoSyncFile, BaseProvider, ErrorCodes, FileError,ActionType, Stats,FileType,  utils,xhr, fetch, DirInode,FileIndex,FileInode) {
 

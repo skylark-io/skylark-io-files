@@ -1,7 +1,7 @@
 define([
     "skylark-langx-paths",
-    '../../stats',
-    '../../file-type',
+    '../stats',
+    '../file-type',
     "./dir-inode",
     "./file-inode"
 ], function (paths, Stats,FileType,DirInode,FileINode) {
