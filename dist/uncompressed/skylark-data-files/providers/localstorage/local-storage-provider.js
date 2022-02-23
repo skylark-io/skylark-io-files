@@ -1,10 +1,12 @@
 define([
     "skylark-langx-binary/buffer",
+    "../../files",
+    "../registry",
     '../sync-key-value-provider',
     '../../error-codes',
     '../../file-error',
     "./local-storage-store"
-], function (Buffer,SyncKeyValueProvider, ErrorCodes,FileError,LocalStorageStore) {
+], function (Buffer,files,registry,SyncKeyValueProvider, ErrorCodes,FileError,LocalStorageStore) {
     'use strict';
 
 
@@ -56,5 +58,8 @@ define([
     
     LocalStorageProvider.LocalStorageStore = LocalStorageStore;
 
-    return LocalStorageProvider;
+    registry.add("localStorage",LocalStorageProvider);
+
+
+    return files.providers.LocalStorageProvider = LocalStorageProvider;
 });

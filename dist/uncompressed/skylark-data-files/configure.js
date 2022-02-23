@@ -20,10 +20,10 @@ define([
      * See the FileSystemConfiguration type for more info on the configuration object.
      */
     function configure(config, cb) {
-        getFileSystem(config, (e, fs) => {
-            if (fs) {
-                initialize(fs);
-                cb(fs);
+        getFileSystem(config, (e, provider) => {
+            if (provider) {
+                initialize(provider);
+                cb(null,fs);
             }
             else {
                 cb(e);

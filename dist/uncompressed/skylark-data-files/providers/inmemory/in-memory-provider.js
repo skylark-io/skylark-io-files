@@ -1,7 +1,9 @@
 define([
+    "../../files",
+    "../registry",
     '../sync-key-value-provider',
     "./in-memory-store"
-], function (SyncKeyValueProvider,InMemoryStore) {
+], function (files,registry,SyncKeyValueProvider,InMemoryStore) {
     'use strict';
 
     /**
@@ -25,5 +27,9 @@ define([
 
     InMemoryProvider.InMemoryStore = InMemoryStore;
 
-    return InMemoryProvider;
+
+    registry.add("inMemory",InMemoryProvider);
+
+
+    return files.providers.InMemoryProvider = InMemoryProvider;
 });

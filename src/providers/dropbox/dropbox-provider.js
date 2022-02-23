@@ -2,6 +2,7 @@ define([
     "skylark-langx-funcs/defer",
     "skylark-langx-binary/buffer",
     "skylark-langx-paths",
+    "../../files",
     "../registry",
     "../base-provider",
     '../../stats',
@@ -10,7 +11,7 @@ define([
     '../../error-codes',
     '../../utils',
     './dropbox-file'
-], function (setImmediate,Buffer,paths, registry,BaseProvider, Stats,FileType,FileError, ErrorCodes, utils,DropboxFile) {
+], function (setImmediate,Buffer,paths,files, registry,BaseProvider, Stats,FileType,FileError, ErrorCodes, utils,DropboxFile) {
     'use strict';
 
     const { arrayBuffer2Buffer, buffer2ArrayBuffer } =  utils;
@@ -534,6 +535,8 @@ define([
 
     DropboxProvider.DropboxFile = DropboxFile;
 
-    return  DropboxProvider;
+    registry.add("dropbox",DropboxProvider);
+
+    return  files.providers.DropboxProvider= DropboxProvider;
     
 });

@@ -4,7 +4,7 @@ define([
     '../file-type',
     "./dir-inode",
     "./file-inode"
-], function (paths, Stats,FileType,DirInode,FileINode) {
+], function (paths, Stats,FileType,DirInode,FileInode) {
     'use strict';
 
     /**
@@ -72,7 +72,7 @@ define([
                     const files = dir.getListing();
                     for (const file of files) {
                         const item = dir.getItem(file);
-                        if (isFileInode(item)) {
+                        if (FileInode.isFileInode(item)) {
                             cb(item.getData());
                         }
                     }
@@ -121,7 +121,7 @@ define([
                 }
             }
             // If I'm a directory, add myself to the index.
-            if (isDirInode(inode)) {
+            if (DirInode.isDirInode(inode)) {
                 this._index[path] = inode;
             }
             return true;
@@ -179,7 +179,7 @@ define([
                 return null;
             }
             // If I'm a directory, remove myself from the index, and remove my children.
-            if (isDirInode(inode)) {
+            if (DirInode.isDirInode(inode)) {
                 const children = inode.getListing();
                 for (const child of children) {
                     this.removePath(path + '/' + child);

@@ -1,5 +1,7 @@
 define([
     "skylark-langx-paths",
+    "../../files",
+    "../registry",
     '../../stats',
     '../../file-type',
     '../../file-error',
@@ -8,7 +10,7 @@ define([
     "../../action-type",
     "../locked-provider",
     "./unlocked-overlay-provider"
-], function (paths, Stats,FileType,FileError, ErrorCodes, FileFlag,ActionType,LockedProvider,UnlockedOverlayProvider) {
+], function (paths,files,registry, Stats,FileType,FileError, ErrorCodes, FileFlag,ActionType,LockedProvider,UnlockedOverlayProvider) {
 
 
     /**
@@ -63,5 +65,8 @@ define([
         }
     };
 
-    return OverlayProvider;
+    registry.add("overlay",OverlayProvider);
+
+
+    return files.providers.OverlayProvider = OverlayProvider;
 });

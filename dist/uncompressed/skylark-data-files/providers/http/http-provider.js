@@ -1,6 +1,8 @@
 define([
     "skylark-langx-async",
     "skylark-langx-paths",
+    "../../files",
+    "../registry",
     '../../no-sync-file',
     "../base-provider",
     '../../error-codes',
@@ -15,7 +17,7 @@ define([
     '../../inodes/file-index',
     '../../inodes/file-inode',
 
-], function (async,paths,NoSyncFile, BaseProvider, ErrorCodes, FileError,ActionType, Stats,FileType,  utils,xhr, fetch, DirInode,FileIndex,FileInode) {
+], function (async,paths,files,registry,NoSyncFile, BaseProvider, ErrorCodes, FileError,ActionType, Stats,FileType,  utils,xhr, fetch, DirInode,FileIndex,FileInode) {
 
 
     'use strict';
@@ -405,5 +407,7 @@ define([
         }
     };
 
-    return HttpProvider;
+    registry.add("http",HttpProvider);
+
+    return files.providers.HttpProvider = HttpProvider;
 });

@@ -52,7 +52,7 @@ define([
             this._writable = writable;
             this._readable = readable;
             if (this._writable.isReadOnly()) {
-                throw new ApiError(ErrorCode.EINVAL, "Writable file system must be writable.");
+                throw new FileError(ErrorCodes.EINVAL, "Writable file system must be writable.");
             }
         }
         static isAvailable() {
@@ -104,7 +104,7 @@ define([
             this._writable.readFile(deletionLogPath, 'utf8', getFlag('r'), (err, data) => {
                 if (err) {
                     // ENOENT === Newly-instantiated file system, and thus empty log.
-                    if (err.errno !== ErrorCode.ENOENT) {
+                    if (err.errno !== ErrorCodes.ENOENT) {
                         return end(err);
                     }
                 }
@@ -132,7 +132,7 @@ define([
                 return;
             }
             if (oldPath === deletionLogPath || newPath === deletionLogPath) {
-                return cb(ApiError.EPERM('Cannot rename deletion log.'));
+                return cb(FileError.EPERM('Cannot rename deletion log.'));
             }
             // nothing to do if paths match
             if (oldPath === newPath) {
@@ -169,7 +169,7 @@ define([
                     // it must specify an empty directory.
                     if (oldStats.isDirectory()) {
                         if (newErr) {
-                            if (newErr.errno !== ErrorCode.ENOENT) {
+                            if (newErr.errno !== ErrorCodes.ENOENT) {
                                 return cb(newErr);
                             }
                             return this._writable.exists(oldPath, (exists) => {
@@ -192,11 +192,11 @@ define([
                         }
                         mode = newStats.mode;
                         if (!newStats.isDirectory()) {
-                            return cb(ApiError.ENOTDIR(newPath));
+                            return cb(FileError.ENOTDIR(newPath));
                         }
                         this.readdir(newPath, (readdirErr, files) => {
                             if (files && files.length) {
-                                return cb(ApiError.ENOTEMPTY(newPath));
+                                return cb(FileError.ENOTEMPTY(newPath));
                             }
                             this._readable.readdir(oldPath, (err, files) => {
                                 if (err) {
@@ -207,7 +207,7 @@ define([
                         });
                     }
                     if (newStats && newStats.isDirectory()) {
-                        return cb(ApiError.EISDIR(newPath));
+                        return cb(FileError.EISDIR(newPath));
                     }
                     this.readFile(oldPath, null, getFlag('r'), (err, data) => {
                         if (err) {
@@ -228,7 +228,7 @@ define([
             this.checkPath(oldPath);
             this.checkPath(newPath);
             if (oldPath === deletionLogPath || newPath === deletionLogPath) {
-                throw ApiError.EPERM('Cannot rename deletion log.');
+                throw FileError.EPERM('Cannot rename deletion log.');
             }
             // Write newPath using oldPath's contents, delete oldPath.
             const oldStats = this.statSync(oldPath, false);
@@ -243,11 +243,11 @@ define([
                     mode = stats.mode;
                     if (stats.isDirectory()) {
                         if (this.readdirSync(newPath).length > 0) {
-                            throw ApiError.ENOTEMPTY(newPath);
+                            throw FileError.ENOTEMPTY(newPath);
                         }
                     }
                     else {
-                        throw ApiError.ENOTDIR(newPath);
+                        throw FileError.ENOTDIR(newPath);
                     }
                 }
                 // Take care of writable first. Move any files there, or create an empty directory
@@ -269,7 +269,7 @@ define([
             }
             else {
                 if (this.existsSync(newPath) && this.statSync(newPath, false).isDirectory()) {
-                    throw ApiError.EISDIR(newPath);
+                    throw FileError.EISDIR(newPath);
                 }
                 this.writeFileSync(newPath, this.readFileSync(oldPath, null, getFlag('r')), null, getFlag('w'), oldStats.mode);
             }
@@ -282,9 +282,9 @@ define([
                 return;
             }
             this._writable.stat(p, isLstat, (err, stat) => {
-                if (err && err.errno === ErrorCode.ENOENT) {
+                if (err && err.errno === ErrorCodes.ENOENT) {
                     if (this._deletedFiles[p]) {
-                        cb(ApiError.ENOENT(p));
+                        cb(FileError.ENOENT(p));
                     }
                     this._readable.stat(p, isLstat, (err, stat) => {
                         if (stat) {
@@ -309,7 +309,7 @@ define([
             }
             catch (e) {
                 if (this._deletedFiles[p]) {
-                    throw ApiError.ENOENT(p);
+                    throw FileError.ENOENT(p);
                 }
                 const oldStat = Stats.clone(this._readable.statSync(p, isLstat));
                 // Make the oldStat's mode writable. Preserve the topmost part of the
@@ -355,7 +355,7 @@ define([
                                 }
                             });
                         default:
-                            return cb(ApiError.EEXIST(p));
+                            return cb(FileError.EEXIST(p));
                     }
                 }
                 else {
@@ -368,7 +368,7 @@ define([
                                 return this._writable.open(p, flag, mode, cb);
                             });
                         default:
-                            return cb(ApiError.ENOENT(p));
+                            return cb(FileError.ENOENT(p));
                     }
                 }
             });
@@ -377,7 +377,7 @@ define([
             this.checkInitialized();
             this.checkPath(p);
             if (p === deletionLogPath) {
-                throw ApiError.EPERM('Cannot open deletion log.');
+                throw FileError.EPERM('Cannot open deletion log.');
             }
             if (this.existsSync(p)) {
                 switch (flag.pathExistsAction()) {
@@ -396,7 +396,7 @@ define([
                             return new OverlayFile(this, p, flag, stats, buf);
                         }
                     default:
-                        throw ApiError.EEXIST(p);
+                        throw FileError.EEXIST(p);
                 }
             }
             else {
@@ -405,7 +405,7 @@ define([
                         this.createParentDirectories(p);
                         return this._writable.openSync(p, flag, mode);
                     default:
-                        throw ApiError.ENOENT(p);
+                        throw FileError.ENOENT(p);
                 }
             }
         }
@@ -415,7 +415,7 @@ define([
             }
             this.exists(p, (exists) => {
                 if (!exists) {
-                    return cb(ApiError.ENOENT(p));
+                    return cb(FileError.ENOENT(p));
                 }
                 this._writable.exists(p, (writableExists) => {
                     if (writableExists) {
@@ -453,7 +453,7 @@ define([
                 }
             }
             else {
-                throw ApiError.ENOENT(p);
+                throw FileError.ENOENT(p);
             }
         }
         rmdir(p, cb) {
@@ -466,7 +466,7 @@ define([
                         return cb(err);
                     }
                     if (files.length) {
-                        return cb(ApiError.ENOTEMPTY(p));
+                        return cb(FileError.ENOTEMPTY(p));
                     }
                     this.deletePath(p);
                     cb(null);
@@ -474,7 +474,7 @@ define([
             };
             this.exists(p, (exists) => {
                 if (!exists) {
-                    return cb(ApiError.ENOENT(p));
+                    return cb(FileError.ENOENT(p));
                 }
                 this._writable.exists(p, (writableExists) => {
                     if (writableExists) {
@@ -507,7 +507,7 @@ define([
                 if (this.existsSync(p)) {
                     // Check if directory is empty.
                     if (this.readdirSync(p).length > 0) {
-                        throw ApiError.ENOTEMPTY(p);
+                        throw FileError.ENOTEMPTY(p);
                     }
                     else {
                         this.deletePath(p);
@@ -515,7 +515,7 @@ define([
                 }
             }
             else {
-                throw ApiError.ENOENT(p);
+                throw FileError.ENOENT(p);
             }
         }
         mkdir(p, mode, cb) {
@@ -524,7 +524,7 @@ define([
             }
             this.exists(p, (exists) => {
                 if (exists) {
-                    return cb(ApiError.EEXIST(p));
+                    return cb(FileError.EEXIST(p));
                 }
                 // The below will throw should any of the parent directories
                 // fail to exist on _writable.
@@ -539,7 +539,7 @@ define([
         mkdirSync(p, mode) {
             this.checkInitialized();
             if (this.existsSync(p)) {
-                throw ApiError.EEXIST(p);
+                throw FileError.EEXIST(p);
             }
             else {
                 // The below will throw should any of the parent directories fail to exist
@@ -557,7 +557,7 @@ define([
                     return cb(err);
                 }
                 if (!dirStats.isDirectory()) {
-                    return cb(ApiError.ENOTDIR(p));
+                    return cb(FileError.ENOTDIR(p));
                 }
                 this._writable.readdir(p, (err, wFiles) => {
                     if (err && err.code !== 'ENOENT') {
@@ -589,7 +589,7 @@ define([
             this.checkInitialized();
             const dirStats = this.statSync(p, false);
             if (!dirStats.isDirectory()) {
-                throw ApiError.ENOTDIR(p);
+                throw FileError.ENOTDIR(p);
             }
             // Readdir in both, check delete log on RO file system's listing, merge, return.
             let contents = [];
@@ -718,7 +718,7 @@ define([
         }
         checkInitialized() {
             if (!this._isInitialized) {
-                throw new ApiError(ErrorCode.EPERM, "OverlayProvideris not initialized. Please initialize OverlayProviderusing its initialize() method before using it.");
+                throw new FileError(ErrorCodes.EPERM, "OverlayProvideris not initialized. Please initialize OverlayProviderusing its initialize() method before using it.");
             }
             else if (this._deleteLogError !== null) {
                 const e = this._deleteLogError;
@@ -728,7 +728,7 @@ define([
         }
         checkInitAsync(cb) {
             if (!this._isInitialized) {
-                cb(new ApiError(ErrorCode.EPERM, "OverlayProvideris not initialized. Please initialize OverlayProviderusing its initialize() method before using it."));
+                cb(new FileError(ErrorCodes.EPERM, "OverlayProvideris not initialized. Please initialize OverlayProviderusing its initialize() method before using it."));
                 return false;
             }
             else if (this._deleteLogError !== null) {
@@ -741,12 +741,12 @@ define([
         }
         checkPath(p) {
             if (p === deletionLogPath) {
-                throw ApiError.EPERM(p);
+                throw FileError.EPERM(p);
             }
         }
         checkPathAsync(p, cb) {
             if (p === deletionLogPath) {
-                cb(ApiError.EPERM(p));
+                cb(FileError.EPERM(p));
                 return true;
             }
             return false;
@@ -759,7 +759,7 @@ define([
             function statDone(err, stat) {
                 if (err) {
                     if (parent === "/") {
-                        cb(new ApiError(ErrorCode.EBUSY, "Invariant failed: root does not exist!"));
+                        cb(new FileError(ErrorCodes.EBUSY, "Invariant failed: root does not exist!"));
                     }
                     else {
                         toCreate.push(parent);
@@ -820,13 +820,13 @@ define([
                 f();
             }
             else {
-                throw ApiError.ENOENT(p);
+                throw FileError.ENOENT(p);
             }
         }
         operateOnWritableAsync(p, cb) {
             this.exists(p, (exists) => {
                 if (!exists) {
-                    return cb(ApiError.ENOENT(p));
+                    return cb(FileError.ENOENT(p));
                 }
                 this._writable.exists(p, (existsWritable) => {
                     if (existsWritable) {

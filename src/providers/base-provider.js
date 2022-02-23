@@ -7,7 +7,7 @@ define([
     '../action-type',
     '../file-flag',
     '../utils'
-], function (Bufer,paths, files,ErrorCodes, FileError, ActionType, FileFlag, utils) {
+], function (Buffer,paths, files,ErrorCodes, FileError, ActionType, FileFlag, utils) {
     'use strict';
 
     const { fail } = utils;

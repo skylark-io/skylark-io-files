@@ -383,6 +383,10 @@ define([
         return copyingSlice(data, 0, uncompressedSize);
     });
 
+
+    registry.add("zip",ZipProvider);
+
+
     return ZipProvider;
 
 });

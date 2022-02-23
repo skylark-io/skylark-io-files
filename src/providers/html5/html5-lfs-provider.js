@@ -1,6 +1,8 @@
 define([
     "skylark-langx-async",
     "skylark-langx-paths",
+    "../../files",
+    "../registry",
     '../../preload-file',
     "../base-provider",
     '../../error-codes',
@@ -10,7 +12,7 @@ define([
     '../../file-type',
     '../../utils',
     "./html5-lfs-file"
-], function (async,paths,PreloadFile, BaseProvider, ErrorCodes, FileError,ActionType, Stats,FileType, utils,Html5LfsFile) {
+], function (async,paths, files,registry, PreloadFile, BaseProvider, ErrorCodes, FileError,ActionType, Stats,FileType, utils,Html5LfsFile) {
     'use strict';
 
     const asyncEach = async.each;
@@ -466,6 +468,9 @@ define([
     };
 
     Html5LfsProvider.Html5LfsFile = Html5LfsFile;
+
+    registry.add("html5Lfs",Html5LfsProvider);
+
 
     return Html5LfsProvider;
 });

@@ -4525,10 +4525,10 @@ define('skylark-data-files/configure',[
      * See the FileSystemConfiguration type for more info on the configuration object.
      */
     function configure(config, cb) {
-        getFileSystem(config, (e, fs) => {
-            if (fs) {
-                initialize(fs);
-                cb(fs);
+        getFileSystem(config, (e, provider) => {
+            if (provider) {
+                initialize(provider);
+                cb(null,fs);
             }
             else {
                 cb(e);
@@ -4604,7 +4604,7 @@ define('skylark-data-files/providers/base-provider',[
     '../action-type',
     '../file-flag',
     '../utils'
-], function (Bufer,paths, files,ErrorCodes, FileError, ActionType, FileFlag, utils) {
+], function (Buffer,paths, files,ErrorCodes, FileError, ActionType, FileFlag, utils) {
     'use strict';
 
     const { fail } = utils;
@@ -5066,6 +5066,7 @@ define('skylark-data-files/providers/dropbox/dropbox-provider',[
     "skylark-langx-funcs/defer",
     "skylark-langx-binary/buffer",
     "skylark-langx-paths",
+    "../../files",
     "../registry",
     "../base-provider",
     '../../stats',
@@ -5074,7 +5075,7 @@ define('skylark-data-files/providers/dropbox/dropbox-provider',[
     '../../error-codes',
     '../../utils',
     './dropbox-file'
-], function (setImmediate,Buffer,paths, registry,BaseProvider, Stats,FileType,FileError, ErrorCodes, utils,DropboxFile) {
+], function (setImmediate,Buffer,paths,files, registry,BaseProvider, Stats,FileType,FileError, ErrorCodes, utils,DropboxFile) {
     'use strict';
 
     const { arrayBuffer2Buffer, buffer2ArrayBuffer } =  utils;
@@ -5598,7 +5599,9 @@ define('skylark-data-files/providers/dropbox/dropbox-provider',[
 
     DropboxProvider.DropboxFile = DropboxFile;
 
-    return  DropboxProvider;
+    registry.add("dropbox",DropboxProvider);
+
+    return  files.providers.DropboxProvider= DropboxProvider;
     
 });
 define('skylark-data-files/providers/html5/html5-lfs-file',[
@@ -5653,6 +5656,8 @@ define('skylark-data-files/providers/html5/html5-lfs-file',[
 define('skylark-data-files/providers/html5/html5-lfs-provider',[
     "skylark-langx-async",
     "skylark-langx-paths",
+    "../../files",
+    "../registry",
     '../../preload-file',
     "../base-provider",
     '../../error-codes',
@@ -5662,7 +5667,7 @@ define('skylark-data-files/providers/html5/html5-lfs-provider',[
     '../../file-type',
     '../../utils',
     "./html5-lfs-file"
-], function (async,paths,PreloadFile, BaseProvider, ErrorCodes, FileError,ActionType, Stats,FileType, utils,Html5LfsFile) {
+], function (async,paths, files,registry, PreloadFile, BaseProvider, ErrorCodes, FileError,ActionType, Stats,FileType, utils,Html5LfsFile) {
     'use strict';
 
     const asyncEach = async.each;
@@ -6119,6 +6124,9 @@ define('skylark-data-files/providers/html5/html5-lfs-provider',[
 
     Html5LfsProvider.Html5LfsFile = Html5LfsFile;
 
+    registry.add("html5Lfs",Html5LfsProvider);
+
+
     return Html5LfsProvider;
 });
 define('skylark-data-files/providers/http/xhr',[
@@ -6402,7 +6410,10 @@ define('skylark-data-files/providers/http/fetch',[
     };
 });
 define('skylark-data-files/inodes/dir-inode',[
-], function () {
+    "skylark-langx-paths",
+    '../stats',
+    '../file-type'
+], function (paths, Stats,FileType) {
     'use strict';
 
     /**
@@ -6525,7 +6536,7 @@ define('skylark-data-files/inodes/file-index',[
     '../file-type',
     "./dir-inode",
     "./file-inode"
-], function (paths, Stats,FileType,DirInode,FileINode) {
+], function (paths, Stats,FileType,DirInode,FileInode) {
     'use strict';
 
     /**
@@ -6593,7 +6604,7 @@ define('skylark-data-files/inodes/file-index',[
                     const files = dir.getListing();
                     for (const file of files) {
                         const item = dir.getItem(file);
-                        if (isFileInode(item)) {
+                        if (FileInode.isFileInode(item)) {
                             cb(item.getData());
                         }
                     }
@@ -6642,7 +6653,7 @@ define('skylark-data-files/inodes/file-index',[
                 }
             }
             // If I'm a directory, add myself to the index.
-            if (isDirInode(inode)) {
+            if (DirInode.isDirInode(inode)) {
                 this._index[path] = inode;
             }
             return true;
@@ -6700,7 +6711,7 @@ define('skylark-data-files/inodes/file-index',[
                 return null;
             }
             // If I'm a directory, remove myself from the index, and remove my children.
-            if (isDirInode(inode)) {
+            if (DirInode.isDirInode(inode)) {
                 const children = inode.getListing();
                 for (const child of children) {
                     this.removePath(path + '/' + child);
@@ -6758,6 +6769,8 @@ define('skylark-data-files/inodes/file-index',[
 define('skylark-data-files/providers/http/http-provider',[
     "skylark-langx-async",
     "skylark-langx-paths",
+    "../../files",
+    "../registry",
     '../../no-sync-file',
     "../base-provider",
     '../../error-codes',
@@ -6772,7 +6785,7 @@ define('skylark-data-files/providers/http/http-provider',[
     '../../inodes/file-index',
     '../../inodes/file-inode',
 
-], function (async,paths,NoSyncFile, BaseProvider, ErrorCodes, FileError,ActionType, Stats,FileType,  utils,xhr, fetch, DirInode,FileIndex,FileInode) {
+], function (async,paths,files,registry,NoSyncFile, BaseProvider, ErrorCodes, FileError,ActionType, Stats,FileType,  utils,xhr, fetch, DirInode,FileIndex,FileInode) {
 
 
     'use strict';
@@ -7162,7 +7175,9 @@ define('skylark-data-files/providers/http/http-provider',[
         }
     };
 
-    return HttpProvider;
+    registry.add("http",HttpProvider);
+
+    return files.providers.HttpProvider = HttpProvider;
 });
 define('skylark-data-files/inodes/inode',[
     "skylark-langx-binary/buffer",
@@ -8246,6 +8261,7 @@ define('skylark-data-files/providers/indexeddb/indexed-db-store',[
     return IndexedDBStore;
 });
 define('skylark-data-files/providers/indexeddb/indexed-db-provider',[
+    "../../files",
     '../../file-error',
     '../../error-codes',
     '../async-key-value-provider',
@@ -8254,7 +8270,7 @@ define('skylark-data-files/providers/indexeddb/indexed-db-provider',[
     "./indexed-db-store",
     "./indexed-db-ro-transaction",
     "./indexed-db-rw-transaction"
-], function (FileError,ErrorCodes, AsyncKeyValueProvider,  registry,utils,IndexedDBStore,IndexedDBROTransaction,IndexedDBRWTransaction) {
+], function (files,FileError,ErrorCodes, AsyncKeyValueProvider,  registry,utils,IndexedDBStore,IndexedDBROTransaction,IndexedDBRWTransaction) {
     'use strict';
 
     /**
@@ -8327,7 +8343,7 @@ define('skylark-data-files/providers/indexeddb/indexed-db-provider',[
 
     registry.add("indexedDB",IndexedDBProvider);
 
-    return IndexedDBProvider;
+    return files.providers.IndexedDBProvider = IndexedDBProvider;
 });
 define('skylark-data-files/providers/synchronous-provider',[
     "skylark-langx-binary/buffer",
@@ -8933,9 +8949,11 @@ define('skylark-data-files/providers/inmemory/in-memory-store',[
     return InMemoryStore;
 });
 define('skylark-data-files/providers/inmemory/in-memory-provider',[
+    "../../files",
+    "../registry",
     '../sync-key-value-provider',
     "./in-memory-store"
-], function (SyncKeyValueProvider,InMemoryStore) {
+], function (files,registry,SyncKeyValueProvider,InMemoryStore) {
     'use strict';
 
     /**
@@ -8959,7 +8977,11 @@ define('skylark-data-files/providers/inmemory/in-memory-provider',[
 
     InMemoryProvider.InMemoryStore = InMemoryStore;
 
-    return InMemoryProvider;
+
+    registry.add("inMemory",InMemoryProvider);
+
+
+    return files.providers.InMemoryProvider = InMemoryProvider;
 });
 define('skylark-data-files/providers/localstorage/local-storage-store',[
     "skylark-langx-binary/buffer",
@@ -9025,11 +9047,13 @@ define('skylark-data-files/providers/localstorage/local-storage-store',[
 });
 define('skylark-data-files/providers/localstorage/local-storage-provider',[
     "skylark-langx-binary/buffer",
+    "../../files",
+    "../registry",
     '../sync-key-value-provider',
     '../../error-codes',
     '../../file-error',
     "./local-storage-store"
-], function (Buffer,SyncKeyValueProvider, ErrorCodes,FileError,LocalStorageStore) {
+], function (Buffer,files,registry,SyncKeyValueProvider, ErrorCodes,FileError,LocalStorageStore) {
     'use strict';
 
 
@@ -9081,7 +9105,10 @@ define('skylark-data-files/providers/localstorage/local-storage-provider',[
     
     LocalStorageProvider.LocalStorageStore = LocalStorageStore;
 
-    return LocalStorageProvider;
+    registry.add("localStorage",LocalStorageProvider);
+
+
+    return files.providers.LocalStorageProvider = LocalStorageProvider;
 });
 define('skylark-data-files/providers/mutex',[
     "skylark-langx-funcs/defer"
@@ -9538,7 +9565,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
             this._writable = writable;
             this._readable = readable;
             if (this._writable.isReadOnly()) {
-                throw new ApiError(ErrorCode.EINVAL, "Writable file system must be writable.");
+                throw new FileError(ErrorCodes.EINVAL, "Writable file system must be writable.");
             }
         }
         static isAvailable() {
@@ -9590,7 +9617,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
             this._writable.readFile(deletionLogPath, 'utf8', getFlag('r'), (err, data) => {
                 if (err) {
                     // ENOENT === Newly-instantiated file system, and thus empty log.
-                    if (err.errno !== ErrorCode.ENOENT) {
+                    if (err.errno !== ErrorCodes.ENOENT) {
                         return end(err);
                     }
                 }
@@ -9618,7 +9645,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                 return;
             }
             if (oldPath === deletionLogPath || newPath === deletionLogPath) {
-                return cb(ApiError.EPERM('Cannot rename deletion log.'));
+                return cb(FileError.EPERM('Cannot rename deletion log.'));
             }
             // nothing to do if paths match
             if (oldPath === newPath) {
@@ -9655,7 +9682,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                     // it must specify an empty directory.
                     if (oldStats.isDirectory()) {
                         if (newErr) {
-                            if (newErr.errno !== ErrorCode.ENOENT) {
+                            if (newErr.errno !== ErrorCodes.ENOENT) {
                                 return cb(newErr);
                             }
                             return this._writable.exists(oldPath, (exists) => {
@@ -9678,11 +9705,11 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                         }
                         mode = newStats.mode;
                         if (!newStats.isDirectory()) {
-                            return cb(ApiError.ENOTDIR(newPath));
+                            return cb(FileError.ENOTDIR(newPath));
                         }
                         this.readdir(newPath, (readdirErr, files) => {
                             if (files && files.length) {
-                                return cb(ApiError.ENOTEMPTY(newPath));
+                                return cb(FileError.ENOTEMPTY(newPath));
                             }
                             this._readable.readdir(oldPath, (err, files) => {
                                 if (err) {
@@ -9693,7 +9720,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                         });
                     }
                     if (newStats && newStats.isDirectory()) {
-                        return cb(ApiError.EISDIR(newPath));
+                        return cb(FileError.EISDIR(newPath));
                     }
                     this.readFile(oldPath, null, getFlag('r'), (err, data) => {
                         if (err) {
@@ -9714,7 +9741,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
             this.checkPath(oldPath);
             this.checkPath(newPath);
             if (oldPath === deletionLogPath || newPath === deletionLogPath) {
-                throw ApiError.EPERM('Cannot rename deletion log.');
+                throw FileError.EPERM('Cannot rename deletion log.');
             }
             // Write newPath using oldPath's contents, delete oldPath.
             const oldStats = this.statSync(oldPath, false);
@@ -9729,11 +9756,11 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                     mode = stats.mode;
                     if (stats.isDirectory()) {
                         if (this.readdirSync(newPath).length > 0) {
-                            throw ApiError.ENOTEMPTY(newPath);
+                            throw FileError.ENOTEMPTY(newPath);
                         }
                     }
                     else {
-                        throw ApiError.ENOTDIR(newPath);
+                        throw FileError.ENOTDIR(newPath);
                     }
                 }
                 // Take care of writable first. Move any files there, or create an empty directory
@@ -9755,7 +9782,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
             }
             else {
                 if (this.existsSync(newPath) && this.statSync(newPath, false).isDirectory()) {
-                    throw ApiError.EISDIR(newPath);
+                    throw FileError.EISDIR(newPath);
                 }
                 this.writeFileSync(newPath, this.readFileSync(oldPath, null, getFlag('r')), null, getFlag('w'), oldStats.mode);
             }
@@ -9768,9 +9795,9 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                 return;
             }
             this._writable.stat(p, isLstat, (err, stat) => {
-                if (err && err.errno === ErrorCode.ENOENT) {
+                if (err && err.errno === ErrorCodes.ENOENT) {
                     if (this._deletedFiles[p]) {
-                        cb(ApiError.ENOENT(p));
+                        cb(FileError.ENOENT(p));
                     }
                     this._readable.stat(p, isLstat, (err, stat) => {
                         if (stat) {
@@ -9795,7 +9822,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
             }
             catch (e) {
                 if (this._deletedFiles[p]) {
-                    throw ApiError.ENOENT(p);
+                    throw FileError.ENOENT(p);
                 }
                 const oldStat = Stats.clone(this._readable.statSync(p, isLstat));
                 // Make the oldStat's mode writable. Preserve the topmost part of the
@@ -9841,7 +9868,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                                 }
                             });
                         default:
-                            return cb(ApiError.EEXIST(p));
+                            return cb(FileError.EEXIST(p));
                     }
                 }
                 else {
@@ -9854,7 +9881,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                                 return this._writable.open(p, flag, mode, cb);
                             });
                         default:
-                            return cb(ApiError.ENOENT(p));
+                            return cb(FileError.ENOENT(p));
                     }
                 }
             });
@@ -9863,7 +9890,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
             this.checkInitialized();
             this.checkPath(p);
             if (p === deletionLogPath) {
-                throw ApiError.EPERM('Cannot open deletion log.');
+                throw FileError.EPERM('Cannot open deletion log.');
             }
             if (this.existsSync(p)) {
                 switch (flag.pathExistsAction()) {
@@ -9882,7 +9909,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                             return new OverlayFile(this, p, flag, stats, buf);
                         }
                     default:
-                        throw ApiError.EEXIST(p);
+                        throw FileError.EEXIST(p);
                 }
             }
             else {
@@ -9891,7 +9918,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                         this.createParentDirectories(p);
                         return this._writable.openSync(p, flag, mode);
                     default:
-                        throw ApiError.ENOENT(p);
+                        throw FileError.ENOENT(p);
                 }
             }
         }
@@ -9901,7 +9928,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
             }
             this.exists(p, (exists) => {
                 if (!exists) {
-                    return cb(ApiError.ENOENT(p));
+                    return cb(FileError.ENOENT(p));
                 }
                 this._writable.exists(p, (writableExists) => {
                     if (writableExists) {
@@ -9939,7 +9966,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                 }
             }
             else {
-                throw ApiError.ENOENT(p);
+                throw FileError.ENOENT(p);
             }
         }
         rmdir(p, cb) {
@@ -9952,7 +9979,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                         return cb(err);
                     }
                     if (files.length) {
-                        return cb(ApiError.ENOTEMPTY(p));
+                        return cb(FileError.ENOTEMPTY(p));
                     }
                     this.deletePath(p);
                     cb(null);
@@ -9960,7 +9987,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
             };
             this.exists(p, (exists) => {
                 if (!exists) {
-                    return cb(ApiError.ENOENT(p));
+                    return cb(FileError.ENOENT(p));
                 }
                 this._writable.exists(p, (writableExists) => {
                     if (writableExists) {
@@ -9993,7 +10020,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                 if (this.existsSync(p)) {
                     // Check if directory is empty.
                     if (this.readdirSync(p).length > 0) {
-                        throw ApiError.ENOTEMPTY(p);
+                        throw FileError.ENOTEMPTY(p);
                     }
                     else {
                         this.deletePath(p);
@@ -10001,7 +10028,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                 }
             }
             else {
-                throw ApiError.ENOENT(p);
+                throw FileError.ENOENT(p);
             }
         }
         mkdir(p, mode, cb) {
@@ -10010,7 +10037,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
             }
             this.exists(p, (exists) => {
                 if (exists) {
-                    return cb(ApiError.EEXIST(p));
+                    return cb(FileError.EEXIST(p));
                 }
                 // The below will throw should any of the parent directories
                 // fail to exist on _writable.
@@ -10025,7 +10052,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
         mkdirSync(p, mode) {
             this.checkInitialized();
             if (this.existsSync(p)) {
-                throw ApiError.EEXIST(p);
+                throw FileError.EEXIST(p);
             }
             else {
                 // The below will throw should any of the parent directories fail to exist
@@ -10043,7 +10070,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                     return cb(err);
                 }
                 if (!dirStats.isDirectory()) {
-                    return cb(ApiError.ENOTDIR(p));
+                    return cb(FileError.ENOTDIR(p));
                 }
                 this._writable.readdir(p, (err, wFiles) => {
                     if (err && err.code !== 'ENOENT') {
@@ -10075,7 +10102,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
             this.checkInitialized();
             const dirStats = this.statSync(p, false);
             if (!dirStats.isDirectory()) {
-                throw ApiError.ENOTDIR(p);
+                throw FileError.ENOTDIR(p);
             }
             // Readdir in both, check delete log on RO file system's listing, merge, return.
             let contents = [];
@@ -10204,7 +10231,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
         }
         checkInitialized() {
             if (!this._isInitialized) {
-                throw new ApiError(ErrorCode.EPERM, "OverlayProvideris not initialized. Please initialize OverlayProviderusing its initialize() method before using it.");
+                throw new FileError(ErrorCodes.EPERM, "OverlayProvideris not initialized. Please initialize OverlayProviderusing its initialize() method before using it.");
             }
             else if (this._deleteLogError !== null) {
                 const e = this._deleteLogError;
@@ -10214,7 +10241,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
         }
         checkInitAsync(cb) {
             if (!this._isInitialized) {
-                cb(new ApiError(ErrorCode.EPERM, "OverlayProvideris not initialized. Please initialize OverlayProviderusing its initialize() method before using it."));
+                cb(new FileError(ErrorCodes.EPERM, "OverlayProvideris not initialized. Please initialize OverlayProviderusing its initialize() method before using it."));
                 return false;
             }
             else if (this._deleteLogError !== null) {
@@ -10227,12 +10254,12 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
         }
         checkPath(p) {
             if (p === deletionLogPath) {
-                throw ApiError.EPERM(p);
+                throw FileError.EPERM(p);
             }
         }
         checkPathAsync(p, cb) {
             if (p === deletionLogPath) {
-                cb(ApiError.EPERM(p));
+                cb(FileError.EPERM(p));
                 return true;
             }
             return false;
@@ -10245,7 +10272,7 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
             function statDone(err, stat) {
                 if (err) {
                     if (parent === "/") {
-                        cb(new ApiError(ErrorCode.EBUSY, "Invariant failed: root does not exist!"));
+                        cb(new FileError(ErrorCodes.EBUSY, "Invariant failed: root does not exist!"));
                     }
                     else {
                         toCreate.push(parent);
@@ -10306,13 +10333,13 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
                 f();
             }
             else {
-                throw ApiError.ENOENT(p);
+                throw FileError.ENOENT(p);
             }
         }
         operateOnWritableAsync(p, cb) {
             this.exists(p, (exists) => {
                 if (!exists) {
-                    return cb(ApiError.ENOENT(p));
+                    return cb(FileError.ENOENT(p));
                 }
                 this._writable.exists(p, (existsWritable) => {
                     if (existsWritable) {
@@ -10361,6 +10388,8 @@ define('skylark-data-files/providers/overlay/unlocked-overlay-provider',[
 });
 define('skylark-data-files/providers/overlay/overlay-provider',[
     "skylark-langx-paths",
+    "../../files",
+    "../registry",
     '../../stats',
     '../../file-type',
     '../../file-error',
@@ -10369,7 +10398,7 @@ define('skylark-data-files/providers/overlay/overlay-provider',[
     "../../action-type",
     "../locked-provider",
     "./unlocked-overlay-provider"
-], function (paths, Stats,FileType,FileError, ErrorCodes, FileFlag,ActionType,LockedProvider,UnlockedOverlayProvider) {
+], function (paths,files,registry, Stats,FileType,FileError, ErrorCodes, FileFlag,ActionType,LockedProvider,UnlockedOverlayProvider) {
 
 
     /**
@@ -10424,7 +10453,10 @@ define('skylark-data-files/providers/overlay/overlay-provider',[
         }
     };
 
-    return OverlayProvider;
+    registry.add("overlay",OverlayProvider);
+
+
+    return files.providers.OverlayProvider = OverlayProvider;
 });
 define('skylark-data-files/main',[
 	"./files",

@@ -1,11 +1,13 @@
 define([
     "skylark-langx-paths",
+    "../../files",
+    "../registry",
     "../base-provider",
     './in-memory-provider',
     '../../file-error',
     '../../error-codes',
     '../../utils'
-], function (paths,BaseProvider, InMemoryProvider, FileError, ErrorCodes, utils) {
+], function (paths,files,registry,BaseProvider, InMemoryProvider, FileError, ErrorCodes, utils) {
     'use strict';
     const { mkdirpSync }  = utils;
 
@@ -419,5 +421,5 @@ define([
     }
 
 
-    return MountableProvider;
+    return files.providers.MountableProvider = MountableProvider;
 });

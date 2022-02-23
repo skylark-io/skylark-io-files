@@ -1,5 +1,8 @@
 define([
-], function () {
+    "skylark-langx-paths",
+    '../stats',
+    '../file-type'
+], function (paths, Stats,FileType) {
     'use strict';
 
     /**
