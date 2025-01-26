@@ -1,0 +1,9 @@
+/**
+ * skylark-io-files - The skylark file system library
+ * @author Hudaokeji Co.,Ltd
+ * @version v0.9.0
+ * @link www.skylarkjs.org
+ * @license MIT
+ */
+define(["skylark-langx-paths","../stats","../file-type","./dir-inode","./file-inode"],function(i,u,_,f,x){"use strict";return class g{constructor(){this._index={},this.addPath("/",new f)}static fromListing(t){for(var e=new g,i=new f,n=[["",t,e._index["/"]=i]];0<n.length;){let t;var r,s,d=n.pop(),a=d[0],h=d[1],o=d[2];for(const l in h)h.hasOwnProperty(l)&&(r=h[l],s=a+"/"+l,r?(e._index[s]=t=new f,n.push([s,r,t])):t=new x(new u(_.FILE,-1,365)),o)&&(o._ls[l]=t)}return e}fileIterator(t){for(const n in this._index)if(this._index.hasOwnProperty(n)){var e=this._index[n];for(const r of e.getListing()){var i=e.getItem(r);x.isFileInode(i)&&t(i.getData())}}}addPath(t,e){if(!e)throw new Error("Inode must be specified");if("/"!==t[0])throw new Error("Path must be absolute, got: "+t);if(this._index.hasOwnProperty(t))return this._index[t]===e;var i=(n=this._split_path(t))[0],n=n[1];let r=this._index[i];return!(void 0===r&&"/"!==t&&(r=new f,!this.addPath(i,r))||"/"!==t&&!r.addItem(n,e)||(f.isDirInode(e)&&(this._index[t]=e),0))}addPathFast(t,e){var i=0===(n=t.lastIndexOf("/"))?"/":t.substring(0,n),n=t.substring(n+1);let r=this._index[i];return void 0===r&&(r=new f,this.addPathFast(i,r)),!!r.addItem(n,e)&&(e.isDir()&&(this._index[t]=e),!0)}removePath(t){var e=(i=this._split_path(t))[0],i=i[1];if(void 0===(e=this._index[e]))return null;if(null===(e=e.remItem(i)))return null;if(f.isDirInode(e)){for(const n of e.getListing())this.removePath(t+"/"+n);"/"!==t&&delete this._index[t]}return e}ls(t){return void 0===(t=this._index[t])?null:t.getListing()}getInode(t){var e=(i=this._split_path(t))[0],i=i[1],n=this._index[e];return void 0===n?null:e===t?n:n.getItem(i)}_split_path(t){var e=i.dirname(t);return[e,t.substr(e.length+("/"===e?0:1))]}}});
+//# sourceMappingURL=../sourcemaps/inodes/file-index.js.map

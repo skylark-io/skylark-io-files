@@ -1,5 +1,5 @@
 {
-  "name": "skylark-data-files",
+  "name": "skylark-io-files",
   "version": "0.9.0",
   "description": "The skylark file system library",
   "main": "-",
