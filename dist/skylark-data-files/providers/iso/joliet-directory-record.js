@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["./misc","/directory-record"],function(t,r){"use strict";return class extends r{constructor(t,r){super(t,r)}_getString(r,e){return t.getJolietString(this._data,r,e)}_constructDirectory(t){return new JolietDirectory(this,t)}_getGetString(){return t.getJolietString}}});
+define(["./misc","/directory-record"],function(e,t){"use strict";class r extends t{constructor(t,r){super(t,r)}_getString(t,r){return e.getJolietString(this._data,t,r)}_constructDirectory(t){return new JolietDirectory(this,t)}_getGetString(){return e.getJolietString}}return r});
 //# sourceMappingURL=../../sourcemaps/providers/iso/joliet-directory-record.js.map

@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["./directory"],function(r){"use strict";return class extends r{constructor(r,e){super(r,e)}_constructDirectoryRecord(r){return new ISODirectoryRecord(r,this._record.getRockRidgeOffset())}}});
+define(["./directory"],function(r){"use strict";class e extends r{constructor(r,e){super(r,e)}_constructDirectoryRecord(r){return new ISODirectoryRecord(r,this._record.getRockRidgeOffset())}}return e});
 //# sourceMappingURL=../../sourcemaps/providers/iso/iso-directory.js.map

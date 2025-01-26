@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define([],function(){"use strict";var S;return function(S){S[S.MSDOS=0]="MSDOS",S[S.AMIGA=1]="AMIGA",S[S.OPENVMS=2]="OPENVMS",S[S.UNIX=3]="UNIX",S[S.VM_CMS=4]="VM_CMS",S[S.ATARI_ST=5]="ATARI_ST",S[S.OS2_HPFS=6]="OS2_HPFS",S[S.MAC=7]="MAC",S[S.Z_SYSTEM=8]="Z_SYSTEM",S[S.CP_M=9]="CP_M",S[S.NTFS=10]="NTFS",S[S.MVS=11]="MVS",S[S.VSE=12]="VSE",S[S.ACORN_RISC=13]="ACORN_RISC",S[S.VFAT=14]="VFAT",S[S.ALT_MVS=15]="ALT_MVS",S[S.BEOS=16]="BEOS",S[S.TANDEM=17]="TANDEM",S[S.OS_400=18]="OS_400",S[S.OSX=19]="OSX"}(S||(S={})),S});
+define([],function(){"use strict";var S,M;return(M=S=S||{})[M.MSDOS=0]="MSDOS",M[M.AMIGA=1]="AMIGA",M[M.OPENVMS=2]="OPENVMS",M[M.UNIX=3]="UNIX",M[M.VM_CMS=4]="VM_CMS",M[M.ATARI_ST=5]="ATARI_ST",M[M.OS2_HPFS=6]="OS2_HPFS",M[M.MAC=7]="MAC",M[M.Z_SYSTEM=8]="Z_SYSTEM",M[M.CP_M=9]="CP_M",M[M.NTFS=10]="NTFS",M[M.MVS=11]="MVS",M[M.VSE=12]="VSE",M[M.ACORN_RISC=13]="ACORN_RISC",M[M.VFAT=14]="VFAT",M[M.ALT_MVS=15]="ALT_MVS",M[M.BEOS=16]="BEOS",M[M.TANDEM=17]="TANDEM",M[M.OS_400=18]="OS_400",M[M.OSX=19]="OSX",S});
 //# sourceMappingURL=../../sourcemaps/providers/zip/external-file-attribute-type.js.map

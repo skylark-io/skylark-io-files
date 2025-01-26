@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["./misc","/directory-record"],function(t,r){"use strict";return class extends r{constructor(t,r){super(t,r)}_getString(r,e){return t.getASCIIString(this._data,r,e)}_constructDirectory(t){return new ISODirectory(this,t)}_getGetString(){return t.getASCIIString}}});
+define(["./misc","/directory-record"],function(e,t){"use strict";class r extends t{constructor(t,r){super(t,r)}_getString(t,r){return e.getASCIIString(this._data,t,r)}_constructDirectory(t){return new ISODirectory(this,t)}_getGetString(){return e.getASCIIString}}return r});
 //# sourceMappingURL=../../sourcemaps/providers/iso/iso-directory-record.js.map

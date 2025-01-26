@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["./system-user-entry"],function(e){"use strict";return class extends e{constructor(e){super(e)}}});
+define(["./system-user-entry"],function(e){"use strict";class s extends e{constructor(e){super(e)}}return s});
 //# sourceMappingURL=../../sourcemaps/providers/iso/re-entry.js.map

@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["./files","./error-codes","./file-error"],function(n,e,c){"use strict";return n.BaseFile=class{sync(n){n(new c(e.ENOTSUP))}syncSync(){throw new c(e.ENOTSUP)}datasync(n){this.sync(n)}datasyncSync(){return this.syncSync()}chown(n,s,r){r(new c(e.ENOTSUP))}chownSync(n,s){throw new c(e.ENOTSUP)}chmod(n,s){s(new c(e.ENOTSUP))}chmodSync(n){throw new c(e.ENOTSUP)}utimes(n,s,r){r(new c(e.ENOTSUP))}utimesSync(n,s){throw new c(e.ENOTSUP)}}});
+define(["./files","./error-codes","./file-error"],function(n,s,r){"use strict";return n.BaseFile=class{sync(n){n(new r(s.ENOTSUP))}syncSync(){throw new r(s.ENOTSUP)}datasync(n){this.sync(n)}datasyncSync(){return this.syncSync()}chown(n,e,c){c(new r(s.ENOTSUP))}chownSync(n,e){throw new r(s.ENOTSUP)}chmod(n,e){e(new r(s.ENOTSUP))}chmodSync(n){throw new r(s.ENOTSUP)}utimes(n,e,c){c(new r(s.ENOTSUP))}utimesSync(n,e){throw new r(s.ENOTSUP)}}});
 //# sourceMappingURL=sourcemaps/base-file.js.map

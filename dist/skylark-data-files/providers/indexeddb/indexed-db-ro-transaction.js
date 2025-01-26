@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["../../file-error","../../error-codes","../async-key-value-provider","../../utils"],function(r,e,t,n){"use strict";const{arrayBuffer2Buffer:o,buffer2ArrayBuffer:u}=n;return class{constructor(r,e){this.tx=r,this.store=e}get(t,n){try{const u=this.store.get(t);u.onerror=function(t,n=e.EIO,o=null){return function(e){e.preventDefault(),t(new r(n,null!==o?o:void 0))}}(n),u.onsuccess=(r=>{const e=r.target.result;n(null,void 0===e?e:o(e))})}catch(t){n(function(t,n=t.toString()){switch(t.name){case"NotFoundError":return new r(e.ENOENT,n);case"QuotaExceededError":return new r(e.ENOSPC,n);default:return new r(e.EIO,n)}}(t))}}}});
+define(["../../file-error","../../error-codes","../async-key-value-provider","../../utils"],function(s,c,r,e){"use strict";const a=e["arrayBuffer2Buffer"];function i(r,e=r.toString()){switch(r.name){case"NotFoundError":return new s(c.ENOENT,e);case"QuotaExceededError":return new s(c.ENOSPC,e);default:return new s(c.EIO,e)}}return class{constructor(r,e){this.tx=r,this.store=e}get(r,e){try{var t=this.store.get(r);t.onerror=(n=e,o=c.EIO,u=null,function(r){r.preventDefault(),n(new s(o,null!==u?u:void 0))}),t.onsuccess=r=>{r=r.target.result;e(null,void 0===r?r:a(r))}}catch(r){e(i(r))}var n,o,u}}});
 //# sourceMappingURL=../../sourcemaps/providers/indexeddb/indexed-db-ro-transaction.js.map

@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["../files"],function(n){var r={};return n.providers.registry={get:function(n){return r[n]},add:function(n,e){r[n]=e}}});
+define(["../files"],function(n){var e={};return n.providers.registry={get:function(n){return e[n]},add:function(n,r){e[n]=r}}});
 //# sourceMappingURL=../sourcemaps/providers/registry.js.map

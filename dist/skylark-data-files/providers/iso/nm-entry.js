@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["./system-user-entry"],function(t){"use strict";return class extends t{constructor(t){super(t)}flags(){return this._data[4]}name(t){return t(this._data,5,this.length()-5)}}});
+define(["./system-user-entry"],function(t){"use strict";class e extends t{constructor(t){super(t)}flags(){return this._data[4]}name(t){return t(this._data,5,this.length()-5)}}return e});
 //# sourceMappingURL=../../sourcemaps/providers/iso/nm-entry.js.map

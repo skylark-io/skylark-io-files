@@ -5,10 +5,8 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-(function(factory,globals) {
-  var define = globals.define,
-      require = globals.require,
-      isAmd = (typeof define === 'function' && define.amd),
+(function(factory,globals,define,require) {
+  var isAmd = (typeof define === 'function' && define.amd),
       isCmd = (!isAmd && typeof exports !== 'undefined');
 
   if (!isAmd && !define) {
@@ -273,12 +271,26 @@ define('skylark-langx-binary/binary',[
 
 		//Faster but the results is failing the "instanceof ArrayBuffer" test
 		//return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-	};
+	}
+
+    function readInt8(data, offset) {
+        return data[offset] << 24 >> 24;
+    }
+    function readUint16(data, offset) {
+        return data[offset] << 8 | data[offset + 1];
+    }
+    function readUint32(data, offset) {
+        return (data[offset] << 24 | data[offset + 1] << 16 | data[offset + 2] << 8 | data[offset + 3]) >>> 0;
+    }
+
 
 	return skylark.attach("langx.binary",{
 		fromBase64,
 		fromBinaryString,
-		fromBuffer
+		fromBuffer,
+		readInt8,
+		readUint16,
+		readUint32
 	});
 });
 define('skylark-langx-binary/base64',[],function(){
@@ -530,7 +542,7 @@ define('skylark-langx-binary/ieee754',[],function(){
   return exports;
 });
 
-define('skylark-langx-binary/buffer',[
+define('skylark-langx-binary/memory',[
   "./binary",
   "./base64",
   "./ieee754"
@@ -546,13 +558,13 @@ define('skylark-langx-binary/buffer',[
   'use strict'
 
 
-  Buffer.INSPECT_MAX_BYTES = 50
+  Memory.INSPECT_MAX_BYTES = 50
 
   var K_MAX_LENGTH = 0x7fffffff
-  Buffer.kMaxLength = K_MAX_LENGTH
+  Memory.kMaxLength = K_MAX_LENGTH
 
   /**
-   * If `Buffer.TYPED_ARRAY_SUPPORT`:
+   * If `Memory.TYPED_ARRAY_SUPPORT`:
    *   === true    Use Uint8Array implementation (fastest)
    *   === false   Print warning and recommend using `buffer` v4.x which has an Object
    *               implementation (most compatible, even IE6)
@@ -565,9 +577,9 @@ define('skylark-langx-binary/buffer',[
    * (See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438). IE 10 lacks support
    * for __proto__ and has a buggy typed array implementation.
    */
-  Buffer.TYPED_ARRAY_SUPPORT = typedArraySupport()
+  Memory.TYPED_ARRAY_SUPPORT = typedArraySupport()
 
-  if (!Buffer.TYPED_ARRAY_SUPPORT && typeof console !== 'undefined' &&
+  if (!Memory.TYPED_ARRAY_SUPPORT && typeof console !== 'undefined' &&
       typeof console.error === 'function') {
     console.error(
       'This browser lacks typed array (Uint8Array) support which is required by ' +
@@ -586,45 +598,45 @@ define('skylark-langx-binary/buffer',[
     }
   }
 
-  Object.defineProperty(Buffer.prototype, 'parent', {
+  Object.defineProperty(Memory.prototype, 'parent', {
     get: function () {
-      if (!(this instanceof Buffer)) {
+      if (!(this instanceof Memory)) {
         return undefined
       }
       return this.buffer
     }
   })
 
-  Object.defineProperty(Buffer.prototype, 'offset', {
+  Object.defineProperty(Memory.prototype, 'offset', {
     get: function () {
-      if (!(this instanceof Buffer)) {
+      if (!(this instanceof Memory)) {
         return undefined
       }
       return this.byteOffset
     }
   })
 
-  function createBuffer (length) {
+  function reserveMemory (length) {
     if (length > K_MAX_LENGTH) {
       throw new RangeError('Invalid typed array length')
     }
     // Return an augmented `Uint8Array` instance
     var buf = new Uint8Array(length)
-    buf.__proto__ = Buffer.prototype
+    buf.__proto__ = Memory.prototype
     return buf
   }
 
   /**
-   * The Buffer constructor returns instances of `Uint8Array` that have their
-   * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
-   * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
+   * The Memory constructor returns instances of `Uint8Array` that have their
+   * prototype changed to `Memory.prototype`. Furthermore, `Memory` is a subclass of
+   * `Uint8Array`, so the returned instances will have all the node `Memory` methods
    * and the `Uint8Array` methods. Square bracket notation works as expected -- it
    * returns a single octet.
    *
    * The `Uint8Array` prototype remains unmodified.
    */
 
-  function Buffer (arg, encodingOrOffset, length) {
+  function Memory (arg, encodingOrOffset, length) {
     // Common case.
     if (typeof arg === 'number') {
       if (typeof encodingOrOffset === 'string') {
@@ -639,8 +651,8 @@ define('skylark-langx-binary/buffer',[
 
   // Fix subarray() in ES2016. See: https://github.com/feross/buffer/pull/97
   if (typeof Symbol !== 'undefined' && Symbol.species &&
-      Buffer[Symbol.species] === Buffer) {
-    Object.defineProperty(Buffer, Symbol.species, {
+      Memory[Symbol.species] === Memory) {
+    Object.defineProperty(Memory, Symbol.species, {
       value: null,
       configurable: true,
       enumerable: false,
@@ -648,7 +660,7 @@ define('skylark-langx-binary/buffer',[
     })
   }
 
-  Buffer.poolSize = 8192 // not used by this implementation
+  Memory.poolSize = 8192 // not used by this implementation
 
   function from (value, encodingOrOffset, length) {
     if (typeof value === 'number') {
@@ -667,21 +679,21 @@ define('skylark-langx-binary/buffer',[
   }
 
   /**
-   * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
+   * Functionally equivalent to Memory(arg, encoding) but throws a TypeError
    * if value is a number.
-   * Buffer.from(str[, encoding])
-   * Buffer.from(array)
-   * Buffer.from(buffer)
-   * Buffer.from(arrayBuffer[, byteOffset[, length]])
+   * Memory.from(str[, encoding])
+   * Memory.from(array)
+   * Memory.from(buffer)
+   * Memory.from(arrayBuffer[, byteOffset[, length]])
    **/
-  Buffer.from = function (value, encodingOrOffset, length) {
+  Memory.from = function (value, encodingOrOffset, length) {
     return from(value, encodingOrOffset, length)
   }
 
-  // Note: Change prototype *after* Buffer.from is defined to workaround Chrome bug:
+  // Note: Change prototype *after* Memory.from is defined to workaround Chrome bug:
   // https://github.com/feross/buffer/pull/148
-  Buffer.prototype.__proto__ = Uint8Array.prototype
-  Buffer.__proto__ = Uint8Array
+  Memory.prototype.__proto__ = Uint8Array.prototype
+  Memory.__proto__ = Uint8Array
 
   function assertSize (size) {
     if (typeof size !== 'number') {
@@ -694,42 +706,42 @@ define('skylark-langx-binary/buffer',[
   function alloc (size, fill, encoding) {
     assertSize(size)
     if (size <= 0) {
-      return createBuffer(size)
+      return reserveMemory(size)
     }
     if (fill !== undefined) {
       // Only pay attention to encoding if it's a string. This
       // prevents accidentally sending in a number that would
       // be interpretted as a start offset.
       return typeof encoding === 'string'
-        ? createBuffer(size).fill(fill, encoding)
-        : createBuffer(size).fill(fill)
+        ? reserveMemory(size).fill(fill, encoding)
+        : reserveMemory(size).fill(fill)
     }
-    return createBuffer(size)
+    return reserveMemory(size)
   }
 
   /**
-   * Creates a new filled Buffer instance.
+   * Creates a new filled Memory instance.
    * alloc(size[, fill[, encoding]])
    **/
-  Buffer.alloc = function (size, fill, encoding) {
+  Memory.alloc = function (size, fill, encoding) {
     return alloc(size, fill, encoding)
   }
 
   function allocUnsafe (size) {
     assertSize(size)
-    return createBuffer(size < 0 ? 0 : checked(size) | 0)
+    return reserveMemory(size < 0 ? 0 : checked(size) | 0)
   }
 
   /**
-   * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
+   * Equivalent to Memory(num), by default creates a non-zero-filled Memory instance.
    * */
-  Buffer.allocUnsafe = function (size) {
+  Memory.allocUnsafe = function (size) {
     return allocUnsafe(size)
   }
   /**
-   * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
+   * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Memory instance.
    */
-  Buffer.allocUnsafeSlow = function (size) {
+  Memory.allocUnsafeSlow = function (size) {
     return allocUnsafe(size)
   }
 
@@ -738,12 +750,12 @@ define('skylark-langx-binary/buffer',[
       encoding = 'utf8'
     }
 
-    if (!Buffer.isEncoding(encoding)) {
+    if (!Memory.isEncoding(encoding)) {
       throw new TypeError('Unknown encoding: ' + encoding)
     }
 
     var length = byteLength(string, encoding) | 0
-    var buf = createBuffer(length)
+    var buf = reserveMemory(length)
 
     var actual = buf.write(string, encoding)
 
@@ -759,7 +771,7 @@ define('skylark-langx-binary/buffer',[
 
   function fromArrayLike (array) {
     var length = array.length < 0 ? 0 : checked(array.length) | 0
-    var buf = createBuffer(length)
+    var buf = reserveMemory(length)
     for (var i = 0; i < length; i += 1) {
       buf[i] = array[i] & 255
     }
@@ -785,14 +797,14 @@ define('skylark-langx-binary/buffer',[
     }
 
     // Return an augmented `Uint8Array` instance
-    buf.__proto__ = Buffer.prototype
+    buf.__proto__ = Memory.prototype
     return buf
   }
 
   function fromObject (obj) {
-    if (Buffer.isBuffer(obj)) {
+    if (Memory.isBuffer(obj)) {
       var len = checked(obj.length) | 0
-      var buf = createBuffer(len)
+      var buf = reserveMemory(len)
 
       if (buf.length === 0) {
         return buf
@@ -805,24 +817,24 @@ define('skylark-langx-binary/buffer',[
     if (obj) {
       if (ArrayBuffer.isView(obj) || 'length' in obj) {
         if (typeof obj.length !== 'number' || numberIsNaN(obj.length)) {
-          return createBuffer(0)
+          return reserveMemory(0)
         }
         return fromArrayLike(obj)
       }
 
-      if (obj.type === 'Buffer' && Array.isArray(obj.data)) {
+      if (obj.type === 'Memory' && Array.isArray(obj.data)) {
         return fromArrayLike(obj.data)
       }
     }
 
-    throw new TypeError('The first argument must be one of type string, Buffer, ArrayBuffer, Array, or Array-like Object.')
+    throw new TypeError('The first argument must be one of type string, Memory, ArrayBuffer, Array, or Array-like Object.')
   }
 
   function checked (length) {
     // Note: cannot use `length < K_MAX_LENGTH` here because that fails when
     // length is NaN (which is otherwise coerced to zero.)
     if (length >= K_MAX_LENGTH) {
-      throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
+      throw new RangeError('Attempt to allocate Memory larger than maximum ' +
                            'size: 0x' + K_MAX_LENGTH.toString(16) + ' bytes')
     }
     return length | 0
@@ -832,15 +844,16 @@ define('skylark-langx-binary/buffer',[
     if (+length != length) { // eslint-disable-line eqeqeq
       length = 0
     }
-    return Buffer.alloc(+length)
+    return Memory.alloc(+length)
   }
 
-  Buffer.isBuffer = function isBuffer (b) {
-    return b != null && b._isBuffer === true
+  Memory.isMemory = Memory.isBuffer = function isMemory (b) {
+    return b != null && b._isMemory === true  &&
+    b !== Memory.prototype // so Memory.isMemory(Memory.prototype) will be false
   }
 
-  Buffer.compare = function compare (a, b) {
-    if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+  Memory.compare = function compare (a, b) {
+    if (!Memory.isMemory(a) || !Memory.isMemory(b)) {
       throw new TypeError('Arguments must be Buffers')
     }
 
@@ -862,7 +875,7 @@ define('skylark-langx-binary/buffer',[
     return 0
   }
 
-  Buffer.isEncoding = function isEncoding (encoding) {
+  Memory.isEncoding = function isEncoding (encoding) {
     switch (String(encoding).toLowerCase()) {
       case 'hex':
       case 'utf8':
@@ -881,13 +894,13 @@ define('skylark-langx-binary/buffer',[
     }
   }
 
-  Buffer.concat = function concat (list, length) {
+  Memory.concat = function concat (list, length) {
     if (!Array.isArray(list)) {
       throw new TypeError('"list" argument must be an Array of Buffers')
     }
 
     if (list.length === 0) {
-      return Buffer.alloc(0)
+      return Memory.alloc(0)
     }
 
     var i
@@ -898,14 +911,14 @@ define('skylark-langx-binary/buffer',[
       }
     }
 
-    var buffer = Buffer.allocUnsafe(length)
+    var buffer = Memory.allocUnsafe(length)
     var pos = 0
     for (i = 0; i < list.length; ++i) {
       var buf = list[i]
       if (ArrayBuffer.isView(buf)) {
-        buf = Buffer.from(buf)
+        buf = Memory.from(buf)
       }
-      if (!Buffer.isBuffer(buf)) {
+      if (!Memory.isMemory(buf)) {
         throw new TypeError('"list" argument must be an Array of Buffers')
       }
       buf.copy(buffer, pos)
@@ -915,7 +928,7 @@ define('skylark-langx-binary/buffer',[
   }
 
   function byteLength (string, encoding) {
-    if (Buffer.isBuffer(string)) {
+    if (Memory.isMemory(string)) {
       return string.length
     }
     if (ArrayBuffer.isView(string) || isArrayBuffer(string)) {
@@ -956,7 +969,29 @@ define('skylark-langx-binary/buffer',[
       }
     }
   }
-  Buffer.byteLength = byteLength
+  Memory.byteLength = byteLength
+
+
+  /**
+   * Create arraybuffer from memory
+   *
+   * @method toArrayBuffer
+   * @param {Buffer} buffer
+   * @return {Arraybuffer} data
+   */
+  Memory.toArrayBuffer = function(memory) {
+    var array = new ArrayBuffer(memory.length);
+    var view = new Uint8Array(array);
+
+    for(var i = 0; i < memory.length; i++){
+      view[i] = memory[i];
+    }
+
+    return array;
+
+    //Faster but the results is failing the "instanceof ArrayBuffer" test
+    //return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+  }
 
   function slowToString (encoding, start, end) {
     var loweredCase = false
@@ -1028,13 +1063,9 @@ define('skylark-langx-binary/buffer',[
     }
   }
 
-  // This property is used by `Buffer.isBuffer` (and the `is-buffer` npm package)
-  // to detect a Buffer instance. It's not possible to use `instanceof Buffer`
-  // reliably in a browserify context because there could be multiple different
-  // copies of the 'buffer' package in use. This method works even for Buffer
-  // instances that were created from another copy of the `buffer` package.
-  // See: https://github.com/feross/buffer/issues/154
-  Buffer.prototype._isBuffer = true
+  // This property is used by `Memory.isMemory` 
+  // to detect a Memory instance. 
+  Memory.prototype._isMemory = true
 
   function swap (b, n, m) {
     var i = b[n]
@@ -1042,10 +1073,10 @@ define('skylark-langx-binary/buffer',[
     b[m] = i
   }
 
-  Buffer.prototype.swap16 = function swap16 () {
+  Memory.prototype.swap16 = function swap16 () {
     var len = this.length
     if (len % 2 !== 0) {
-      throw new RangeError('Buffer size must be a multiple of 16-bits')
+      throw new RangeError('Memory size must be a multiple of 16-bits')
     }
     for (var i = 0; i < len; i += 2) {
       swap(this, i, i + 1)
@@ -1053,10 +1084,10 @@ define('skylark-langx-binary/buffer',[
     return this
   }
 
-  Buffer.prototype.swap32 = function swap32 () {
+  Memory.prototype.swap32 = function swap32 () {
     var len = this.length
     if (len % 4 !== 0) {
-      throw new RangeError('Buffer size must be a multiple of 32-bits')
+      throw new RangeError('Memory size must be a multiple of 32-bits')
     }
     for (var i = 0; i < len; i += 4) {
       swap(this, i, i + 3)
@@ -1065,10 +1096,10 @@ define('skylark-langx-binary/buffer',[
     return this
   }
 
-  Buffer.prototype.swap64 = function swap64 () {
+  Memory.prototype.swap64 = function swap64 () {
     var len = this.length
     if (len % 8 !== 0) {
-      throw new RangeError('Buffer size must be a multiple of 64-bits')
+      throw new RangeError('Memory size must be a multiple of 64-bits')
     }
     for (var i = 0; i < len; i += 8) {
       swap(this, i, i + 7)
@@ -1079,34 +1110,34 @@ define('skylark-langx-binary/buffer',[
     return this
   }
 
-  Buffer.prototype.toString = function toString () {
+  Memory.prototype.toString = function toString () {
     var length = this.length
     if (length === 0) return ''
     if (arguments.length === 0) return utf8Slice(this, 0, length)
     return slowToString.apply(this, arguments)
   }
 
-  Buffer.prototype.toLocaleString = Buffer.prototype.toString
+  Memory.prototype.toLocaleString = Memory.prototype.toString
 
-  Buffer.prototype.equals = function equals (b) {
-    if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  Memory.prototype.equals = function equals (b) {
+    if (!Memory.isMemory(b)) throw new TypeError('Argument must be a Memory')
     if (this === b) return true
-    return Buffer.compare(this, b) === 0
+    return Memory.compare(this, b) === 0
   }
 
-  Buffer.prototype.inspect = function inspect () {
+  Memory.prototype.inspect = function inspect () {
     var str = ''
-    var max = Buffer.INSPECT_MAX_BYTES
+    var max = Memory.INSPECT_MAX_BYTES
     if (this.length > 0) {
       str = this.toString('hex', 0, max).match(/.{2}/g).join(' ')
       if (this.length > max) str += ' ... '
     }
-    return '<Buffer ' + str + '>'
+    return '<Memory ' + str + '>'
   }
 
-  Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
-    if (!Buffer.isBuffer(target)) {
-      throw new TypeError('Argument must be a Buffer')
+  Memory.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
+    if (!Memory.isMemory(target)) {
+      throw new TypeError('Argument must be a Memory')
     }
 
     if (start === undefined) {
@@ -1167,8 +1198,8 @@ define('skylark-langx-binary/buffer',[
   // OR the last index of `val` in `buffer` at offset <= `byteOffset`.
   //
   // Arguments:
-  // - buffer - a Buffer to search
-  // - val - a string, Buffer, or number
+  // - buffer - a Memory to search
+  // - val - a string, Memory, or number
   // - byteOffset - an index into `buffer`; will be clamped to an int32
   // - encoding - an optional encoding, relevant is val is a string
   // - dir - true for indexOf, false for lastIndexOf
@@ -1203,11 +1234,11 @@ define('skylark-langx-binary/buffer',[
 
     // Normalize val
     if (typeof val === 'string') {
-      val = Buffer.from(val, encoding)
+      val = Memory.from(val, encoding)
     }
 
     // Finally, search either indexOf (if dir is true) or lastIndexOf
-    if (Buffer.isBuffer(val)) {
+    if (Memory.isMemory(val)) {
       // Special case: looking for empty string/buffer always fails
       if (val.length === 0) {
         return -1
@@ -1225,7 +1256,7 @@ define('skylark-langx-binary/buffer',[
       return arrayIndexOf(buffer, [ val ], byteOffset, encoding, dir)
     }
 
-    throw new TypeError('val must be string, number or Buffer')
+    throw new TypeError('val must be string, number or Memory')
   }
 
   function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
@@ -1284,15 +1315,15 @@ define('skylark-langx-binary/buffer',[
     return -1
   }
 
-  Buffer.prototype.includes = function includes (val, byteOffset, encoding) {
+  Memory.prototype.includes = function includes (val, byteOffset, encoding) {
     return this.indexOf(val, byteOffset, encoding) !== -1
   }
 
-  Buffer.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
+  Memory.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
     return bidirectionalIndexOf(this, val, byteOffset, encoding, true)
   }
 
-  Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
+  Memory.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
     return bidirectionalIndexOf(this, val, byteOffset, encoding, false)
   }
 
@@ -1341,18 +1372,18 @@ define('skylark-langx-binary/buffer',[
     return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
   }
 
-  Buffer.prototype.write = function write (string, offset, length, encoding) {
-    // Buffer#write(string)
+  Memory.prototype.write = function write (string, offset, length, encoding) {
+    // Memory#write(string)
     if (offset === undefined) {
       encoding = 'utf8'
       length = this.length
       offset = 0
-    // Buffer#write(string, encoding)
+    // Memory#write(string, encoding)
     } else if (length === undefined && typeof offset === 'string') {
       encoding = offset
       length = this.length
       offset = 0
-    // Buffer#write(string, offset[, length][, encoding])
+    // Memory#write(string, offset[, length][, encoding])
     } else if (isFinite(offset)) {
       offset = offset >>> 0
       if (isFinite(length)) {
@@ -1364,7 +1395,7 @@ define('skylark-langx-binary/buffer',[
       }
     } else {
       throw new Error(
-        'Buffer.write(string, encoding, offset[, length]) is no longer supported'
+        'Memory.write(string, encoding, offset[, length]) is no longer supported'
       )
     }
 
@@ -1412,9 +1443,9 @@ define('skylark-langx-binary/buffer',[
     }
   }
 
-  Buffer.prototype.toJSON = function toJSON () {
+  Memory.prototype.toJSON = function toJSON () {
     return {
-      type: 'Buffer',
+      type: 'Memory',
       data: Array.prototype.slice.call(this._arr || this, 0)
     }
   }
@@ -1565,7 +1596,7 @@ define('skylark-langx-binary/buffer',[
     return res
   }
 
-  Buffer.prototype.slice = function slice (start, end) {
+  Memory.prototype.slice = function slice (start, end) {
     var len = this.length
     start = ~~start
     end = end === undefined ? len : ~~end
@@ -1588,7 +1619,7 @@ define('skylark-langx-binary/buffer',[
 
     var newBuf = this.subarray(start, end)
     // Return an augmented `Uint8Array` instance
-    newBuf.__proto__ = Buffer.prototype
+    newBuf.__proto__ = Memory.prototype
     return newBuf
   }
 
@@ -1600,7 +1631,7 @@ define('skylark-langx-binary/buffer',[
     if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
   }
 
-  Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
+  Memory.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
     offset = offset >>> 0
     byteLength = byteLength >>> 0
     if (!noAssert) checkOffset(offset, byteLength, this.length)
@@ -1615,7 +1646,7 @@ define('skylark-langx-binary/buffer',[
     return val
   }
 
-  Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
+  Memory.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
     offset = offset >>> 0
     byteLength = byteLength >>> 0
     if (!noAssert) {
@@ -1631,25 +1662,25 @@ define('skylark-langx-binary/buffer',[
     return val
   }
 
-  Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
+  Memory.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
     offset = offset >>> 0
     if (!noAssert) checkOffset(offset, 1, this.length)
     return this[offset]
   }
 
-  Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
+  Memory.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
     offset = offset >>> 0
     if (!noAssert) checkOffset(offset, 2, this.length)
     return this[offset] | (this[offset + 1] << 8)
   }
 
-  Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
+  Memory.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
     offset = offset >>> 0
     if (!noAssert) checkOffset(offset, 2, this.length)
     return (this[offset] << 8) | this[offset + 1]
   }
 
-  Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
+  Memory.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
     offset = offset >>> 0
     if (!noAssert) checkOffset(offset, 4, this.length)
 
@@ -1659,7 +1690,7 @@ define('skylark-langx-binary/buffer',[
         (this[offset + 3] * 0x1000000)
   }
 
-  Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
+  Memory.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
     offset = offset >>> 0
     if (!noAssert) checkOffset(offset, 4, this.length)
 
@@ -1669,7 +1700,7 @@ define('skylark-langx-binary/buffer',[
       this[offset + 3])
   }
 
-  Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
+  Memory.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
     offset = offset >>> 0
     byteLength = byteLength >>> 0
     if (!noAssert) checkOffset(offset, byteLength, this.length)
@@ -1687,7 +1718,7 @@ define('skylark-langx-binary/buffer',[
     return val
   }
 
-  Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
+  Memory.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
     offset = offset >>> 0
     byteLength = byteLength >>> 0
     if (!noAssert) checkOffset(offset, byteLength, this.length)
@@ -1705,28 +1736,28 @@ define('skylark-langx-binary/buffer',[
     return val
   }
 
-  Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
+  Memory.prototype.readInt8 = function readInt8 (offset, noAssert) {
     offset = offset >>> 0
     if (!noAssert) checkOffset(offset, 1, this.length)
     if (!(this[offset] & 0x80)) return (this[offset])
     return ((0xff - this[offset] + 1) * -1)
   }
 
-  Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
+  Memory.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
     offset = offset >>> 0
     if (!noAssert) checkOffset(offset, 2, this.length)
     var val = this[offset] | (this[offset + 1] << 8)
     return (val & 0x8000) ? val | 0xFFFF0000 : val
   }
 
-  Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
+  Memory.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
     offset = offset >>> 0
     if (!noAssert) checkOffset(offset, 2, this.length)
     var val = this[offset + 1] | (this[offset] << 8)
     return (val & 0x8000) ? val | 0xFFFF0000 : val
   }
 
-  Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
+  Memory.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
     offset = offset >>> 0
     if (!noAssert) checkOffset(offset, 4, this.length)
 
@@ -1736,7 +1767,7 @@ define('skylark-langx-binary/buffer',[
       (this[offset + 3] << 24)
   }
 
-  Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
+  Memory.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
     offset = offset >>> 0
     if (!noAssert) checkOffset(offset, 4, this.length)
 
@@ -1746,37 +1777,37 @@ define('skylark-langx-binary/buffer',[
       (this[offset + 3])
   }
 
-  Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
+  Memory.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
     offset = offset >>> 0
     if (!noAssert) checkOffset(offset, 4, this.length)
     return ieee754.read(this, offset, true, 23, 4)
   }
 
-  Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
+  Memory.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
     offset = offset >>> 0
     if (!noAssert) checkOffset(offset, 4, this.length)
     return ieee754.read(this, offset, false, 23, 4)
   }
 
-  Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
+  Memory.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
     offset = offset >>> 0
     if (!noAssert) checkOffset(offset, 8, this.length)
     return ieee754.read(this, offset, true, 52, 8)
   }
 
-  Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
+  Memory.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
     offset = offset >>> 0
     if (!noAssert) checkOffset(offset, 8, this.length)
     return ieee754.read(this, offset, false, 52, 8)
   }
 
   function checkInt (buf, value, offset, ext, max, min) {
-    if (!Buffer.isBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance')
+    if (!Memory.isMemory(buf)) throw new TypeError('"buffer" argument must be a Memory instance')
     if (value > max || value < min) throw new RangeError('"value" argument is out of bounds')
     if (offset + ext > buf.length) throw new RangeError('Index out of range')
   }
 
-  Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
+  Memory.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
     value = +value
     offset = offset >>> 0
     byteLength = byteLength >>> 0
@@ -1795,7 +1826,7 @@ define('skylark-langx-binary/buffer',[
     return offset + byteLength
   }
 
-  Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
+  Memory.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
     value = +value
     offset = offset >>> 0
     byteLength = byteLength >>> 0
@@ -1814,7 +1845,7 @@ define('skylark-langx-binary/buffer',[
     return offset + byteLength
   }
 
-  Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
+  Memory.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
     value = +value
     offset = offset >>> 0
     if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
@@ -1822,7 +1853,7 @@ define('skylark-langx-binary/buffer',[
     return offset + 1
   }
 
-  Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
+  Memory.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
     value = +value
     offset = offset >>> 0
     if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
@@ -1831,7 +1862,7 @@ define('skylark-langx-binary/buffer',[
     return offset + 2
   }
 
-  Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
+  Memory.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
     value = +value
     offset = offset >>> 0
     if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
@@ -1840,7 +1871,7 @@ define('skylark-langx-binary/buffer',[
     return offset + 2
   }
 
-  Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
+  Memory.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
     value = +value
     offset = offset >>> 0
     if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
@@ -1851,7 +1882,7 @@ define('skylark-langx-binary/buffer',[
     return offset + 4
   }
 
-  Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
+  Memory.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
     value = +value
     offset = offset >>> 0
     if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
@@ -1862,7 +1893,7 @@ define('skylark-langx-binary/buffer',[
     return offset + 4
   }
 
-  Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
+  Memory.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
     value = +value
     offset = offset >>> 0
     if (!noAssert) {
@@ -1885,7 +1916,7 @@ define('skylark-langx-binary/buffer',[
     return offset + byteLength
   }
 
-  Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
+  Memory.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
     value = +value
     offset = offset >>> 0
     if (!noAssert) {
@@ -1908,7 +1939,7 @@ define('skylark-langx-binary/buffer',[
     return offset + byteLength
   }
 
-  Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
+  Memory.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
     value = +value
     offset = offset >>> 0
     if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
@@ -1917,7 +1948,7 @@ define('skylark-langx-binary/buffer',[
     return offset + 1
   }
 
-  Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
+  Memory.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
     value = +value
     offset = offset >>> 0
     if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
@@ -1926,7 +1957,7 @@ define('skylark-langx-binary/buffer',[
     return offset + 2
   }
 
-  Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
+  Memory.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
     value = +value
     offset = offset >>> 0
     if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
@@ -1935,7 +1966,7 @@ define('skylark-langx-binary/buffer',[
     return offset + 2
   }
 
-  Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
+  Memory.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
     value = +value
     offset = offset >>> 0
     if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
@@ -1946,7 +1977,7 @@ define('skylark-langx-binary/buffer',[
     return offset + 4
   }
 
-  Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
+  Memory.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
     value = +value
     offset = offset >>> 0
     if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
@@ -1973,11 +2004,11 @@ define('skylark-langx-binary/buffer',[
     return offset + 4
   }
 
-  Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
+  Memory.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
     return writeFloat(this, value, offset, true, noAssert)
   }
 
-  Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
+  Memory.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
     return writeFloat(this, value, offset, false, noAssert)
   }
 
@@ -1991,17 +2022,17 @@ define('skylark-langx-binary/buffer',[
     return offset + 8
   }
 
-  Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
+  Memory.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
     return writeDouble(this, value, offset, true, noAssert)
   }
 
-  Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
+  Memory.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
     return writeDouble(this, value, offset, false, noAssert)
   }
 
   // copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
-  Buffer.prototype.copy = function copy (target, targetStart, start, end) {
-    if (!Buffer.isBuffer(target)) throw new TypeError('argument should be a Buffer')
+  Memory.prototype.copy = function copy (target, targetStart, start, end) {
+    if (!Memory.isMemory(target)) throw new TypeError('argument should be a Memory')
     if (!start) start = 0
     if (!end && end !== 0) end = this.length
     if (targetStart >= target.length) targetStart = target.length
@@ -2050,7 +2081,7 @@ define('skylark-langx-binary/buffer',[
   //    buffer.fill(number[, offset[, end]])
   //    buffer.fill(buffer[, offset[, end]])
   //    buffer.fill(string[, offset[, end]][, encoding])
-  Buffer.prototype.fill = function fill (val, start, end, encoding) {
+  Memory.prototype.fill = function fill (val, start, end, encoding) {
     // Handle string cases:
     if (typeof val === 'string') {
       if (typeof start === 'string') {
@@ -2064,7 +2095,7 @@ define('skylark-langx-binary/buffer',[
       if (encoding !== undefined && typeof encoding !== 'string') {
         throw new TypeError('encoding must be a string')
       }
-      if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
+      if (typeof encoding === 'string' && !Memory.isEncoding(encoding)) {
         throw new TypeError('Unknown encoding: ' + encoding)
       }
       if (val.length === 1) {
@@ -2099,9 +2130,9 @@ define('skylark-langx-binary/buffer',[
         this[i] = val
       }
     } else {
-      var bytes = Buffer.isBuffer(val)
+      var bytes = Memory.isMemory(val)
         ? val
-        : new Buffer(val, encoding)
+        : new Memory(val, encoding)
       var len = bytes.length
       if (len === 0) {
         throw new TypeError('The value "' + val +
@@ -2268,8 +2299,13 @@ define('skylark-langx-binary/buffer',[
     return obj !== obj // eslint-disable-line no-self-compare
   }
 
-  return binary.Buffer = Buffer;
+  return binary.Memory = Memory;
 
+});
+define('skylark-langx-binary/buffer',[
+  "./memory"
+],function(Memory){
+  return Memory;
 });
 define('skylark-data-files/error-strings',[
   "./files",
@@ -2771,8 +2807,8 @@ define('skylark-langx-types/types',[
      * // => false
      */
     function isSymbol(value) {
-      return typeof value == 'symbol' ||
-        (isObjectLike(value) && objectToString.call(value) == symbolTag);
+      return typeof value == 'symbol' ;
+       //|| (isObjectLike(value) && objectToString.call(value) == symbolTag); // modified by lwf
     }
 
     // Is a given variable undefined?
@@ -2940,6 +2976,8 @@ define('skylark-langx-types/types',[
 
         isHtmlNode: isHtmlNode,
 
+        isInstanceOf,
+
         isNaN : function (obj) {
             return isNaN(obj);
         },
@@ -3045,6 +3083,7 @@ define('skylark-langx-funcs/defer',[
         } else {
             var  id;
             if (trigger == 0 && requestAnimationFrame) {
+                //setImmediate
                 id = requestAnimationFrame(fn1);
                 ret.cancel = function() {
                     return cancelAnimationFrame(id);
@@ -3422,134 +3461,245 @@ define('skylark-langx-objects/objects',[
     "skylark-langx-ns",
     "skylark-langx-types"
 ],function(skylark,types){
-    var hasOwnProperty = Object.prototype.hasOwnProperty,
-        slice = Array.prototype.slice,
-        isBoolean = types.isBoolean,
-        isFunction = types.isFunction,
-        isObject = types.isObject,
-        isPlainObject = types.isPlainObject,
-        isArray = types.isArray,
-        isArrayLike = types.isArrayLike,
-        isString = types.isString,
-        toInteger = types.toInteger;
 
-     // An internal function for creating assigner functions.
-    function createAssigner(keysFunc, defaults) {
-        return function(obj) {
-          var length = arguments.length;
-          if (defaults) obj = Object(obj);  
-          if (length < 2 || obj == null) return obj;
-          for (var index = 1; index < length; index++) {
-            var source = arguments[index],
-                keys = keysFunc(source),
-                l = keys.length;
-            for (var i = 0; i < l; i++) {
-              var key = keys[i];
-              if (!defaults || obj[key] === void 0) obj[key] = source[key];
-            }
-          }
-          return obj;
-       };
-    }
+    return skylark.attach("langx.objects",{
+        attach : skylark.attach
+    });
 
+});
+define('skylark-langx-objects/all-keys',[
+    "skylark-langx-types",
+    "./objects"
+],function(types,objects){
 
     // Retrieve all the property names of an object.
     function allKeys(obj) {
-        if (!isObject(obj)) return [];
+        if (!types.isObject(obj)) return [];
         var keys = [];
         for (var key in obj) keys.push(key);
         return keys;
     }
 
-    // Retrieve the names of an object's own properties.
-    // Delegates to **ECMAScript 5**'s native `Object.keys`.
-    function keys(obj) {
-        if (isObject(obj)) return [];
-        var keys = [];
-        for (var key in obj) if (has(obj, key)) keys.push(key);
-        return keys;
-    }
+    return objects.allKeys = allKeys;
 
-    function has(obj, path) {
-        if (!isArray(path)) {
-            return obj != null && hasOwnProperty.call(obj, path);
-        }
-        var length = path.length;
-        for (var i = 0; i < length; i++) {
-            var key = path[i];
-            if (obj == null || !hasOwnProperty.call(obj, key)) {
-                return false;
-            }
-            obj = obj[key];
-        }
-        return !!length;
-    }
+});
+define('skylark-langx-objects/assign',[
+	"skylark-langx-types",
+	"./objects"
+],function(types,objects) {
+
+	return objects.assign = Object.assign;
+});
+define('skylark-langx-objects/to-key',[
+	"skylark-langx-types",
+	"./objects"
+],function(types,objects) {
+
+	const isSymbol = types.isSymbol,
+		  isString = types.isString;
+
+	/** Used as references for various `Number` constants. */
+	const INFINITY = 1 / 0
+
+	/**
+	 * Converts `value` to a string key if it's not a string or symbol.
+	 *
+	 * @private
+	 * @param {*} value The value to inspect.
+	 * @returns {string|symbol} Returns the key.
+	 */
+	function toKey(value) {
+	  if (isString(value) || isSymbol(value)) {
+	    return value
+	  }
+	  const result = `${value}`
+	  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result
+	}
+
+	return objects.toKey = toKey;
+
+});
+define('skylark-langx-objects/is-key',[
+	"skylark-langx-types",
+	"./objects"
+],function(types,objects) {
+
+	const isSymbol = types.isSymbol,
+		  isArray = types.isArray;
+
+	/** Used to match property names within property paths. */
+	const reIsDeepProp = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/
+	const reIsPlainProp = /^\w*$/
+
+	/**
+	 * Checks if `value` is a property name and not a property path.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {Object} [object] The object to query keys on.
+	 * @returns {boolean} Returns `true` if `value` is a property name, else `false`.
+	 */
+	function isKey(value, object) {
+	  if (isArray(value)) {
+	    return false
+	  }
+	  const type = typeof value
+	  if (type === 'number' || type === 'boolean' || value == null || isSymbol(value)) {
+	    return true
+	  }
+	  return reIsPlainProp.test(value) || !reIsDeepProp.test(value) ||
+	    (object != null && value in Object(object))
+	}
+
+	return objects.isKey = isKey;
+});
+define('skylark-langx-objects/_cast_path',[
+	"skylark-langx-types",
+	"./objects",
+	"./is-key"
+],function(types,objects,isKey) {
+	const charCodeOfDot = '.'.charCodeAt(0)
+	const reEscapeChar = /\\(\\)?/g
+	const rePropName = RegExp(
+	  // Match anything that isn't a dot or bracket.
+	  '[^.[\\]]+' + '|' +
+	  // Or match property names within brackets.
+	  '\\[(?:' +
+	    // Match a non-string expression.
+	    '([^"\'][^[]*)' + '|' +
+	    // Or match strings (supports escaping characters).
+	    '(["\'])((?:(?!\\2)[^\\\\]|\\\\.)*?)\\2' +
+	  ')\\]'+ '|' +
+	  // Or match "" as the space between consecutive dots or empty brackets.
+	  '(?=(?:\\.|\\[\\])(?:\\.|\\[\\]|$))'
+	  , 'g')
+
+	/**
+	 * Converts `string` to a property path array.
+	 *
+	 * @private
+	 * @param {string} string The string to convert.
+	 * @returns {Array} Returns the property path array.
+	 */
+	const stringToPath = ((string) => {
+	  const result = []
+	  if (string.charCodeAt(0) === charCodeOfDot) {
+	    result.push('')
+	  }
+	  string.replace(rePropName, (match, expression, quote, subString) => {
+	    let key = match
+	    if (quote) {
+	      key = subString.replace(reEscapeChar, '$1')
+	    }
+	    else if (expression) {
+	      key = expression.trim()
+	    }
+	    result.push(key)
+	  })
+	  return result
+	});
+
+	/**
+	 * Casts `value` to a path array if it's not one.
+	 *
+	 * @private
+	 * @param {*} value The value to inspect.
+	 * @param {Object} [object] The object to query keys on.
+	 * @returns {Array} Returns the cast property path array.
+	 */
+	function castPath(value, object) {
+	  if (types.isArray(value)) {
+	    return value
+	  }
+	  return isKey(value, object) ? [value] : stringToPath(value)
+	}
+
+	return castPath;
+});
+define('skylark-langx-objects/get',[
+	"skylark-langx-types",
+	"./objects",
+	"./to-key",
+	"./_cast_path"
+],function(types,objects,toKey,castPath) {
+
+	/**
+	 * The base implementation of `get` without support for default values.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @param {Array|string} path The path of the property to get.
+	 * @returns {*} Returns the resolved value.
+	 */
+	function baseGet(object, path) {
+	  path = castPath(path, object)
+
+	  let index = 0
+	  const length = path.length
+
+	  while (object != null && index < length) {
+	    object = object[toKey(path[index++])]
+	  }
+	  return (index && index == length) ? object : undefined
+	}
 
 
-    // Returns whether an object has a given set of `key:value` pairs.
-    function isMatch(object, attrs) {
-        var keys = keys(attrs), length = keys.length;
-        if (object == null) return !length;
-        var obj = Object(object);
-        for (var i = 0; i < length; i++) {
-          var key = keys[i];
-          if (attrs[key] !== obj[key] || !(key in obj)) return false;
-        }
-        return true;
-    }    
+	/**
+	 * Gets the value at `path` of `object`. If the resolved value is
+	 * `undefined`, the `defaultValue` is returned in its place.
+	 *
+	 * @since 3.7.0
+	 * @category Object
+	 * @param {Object} object The object to query.
+	 * @param {Array|string} path The path of the property to get.
+	 * @param {*} [defaultValue] The value returned for `undefined` resolved values.
+	 * @returns {*} Returns the resolved value.
+	 * @see has, hasIn, set, unset
+	 * @example
+	 *
+	 * const object = { 'a': [{ 'b': { 'c': 3 } }] }
+	 *
+	 * get(object, 'a[0].b.c')
+	 * // => 3
+	 *
+	 * get(object, ['a', '0', 'b', 'c'])
+	 * // => 3
+	 *
+	 * get(object, 'a.b.c', 'default')
+	 * // => 'default'
+	 */
+	function get(object, path, defaultValue) {
+	  const result = object == null ? undefined : baseGet(object, path)
+	  return result === undefined ? defaultValue : result
+	}
 
+	return objects.get = get;
+});
+define('skylark-langx-objects/base-at',[
+	"./objects",
+	"./get"
+],function(objects,get) {
 
-    function removeItem(items, item) {
-        if (isArray(items)) {
-            var idx = items.indexOf(item);
-            if (idx != -1) {
-                items.splice(idx, 1);
-            }
-        } else if (isPlainObject(items)) {
-            for (var key in items) {
-                if (items[key] == item) {
-                    delete items[key];
-                    break;
-                }
-            }
-        }
+	/**
+	 * The base implementation of `at` without support for individual paths.
+	 *
+	 * @param {Object} object The object to iterate over.
+	 * @param {string[]} paths The property paths to pick.
+	 * @returns {Array} Returns the picked elements.
+	 */
+	function baseAt(object, paths) {
+	  let index = -1
+	  const length = paths.length
+	  const result = new Array(length)
+	  const skip = object == null
 
-        return this;
-    }
+	  while (++index < length) {
+	    result[index] = skip ? undefined : get(object, paths[index])
+	  }
+	  return result
+	}
 
-
-
-    // Retrieve the values of an object's properties.
-    function values(obj) {
-        var keys = allKeys(obj);
-        var length = keys.length;
-        var values = Array(length);
-        for (var i = 0; i < length; i++) {
-            values[i] = obj[keys[i]];
-        }
-        return values;
-    }
-
-
-    return skylark.attach("langx.objects",{
-        allKeys: allKeys,
-
-        attach : skylark.attach,
-
-        defaults : createAssigner(allKeys, true),
-
-        has: has,
-
-        isMatch: isMatch,
-
-        keys: keys,
-
-        removeItem: removeItem,
-
-        values: values
-    });
-
-
+	return objects.baseAt = baseAt;
 });
 define('skylark-langx-objects/clone',[
     "skylark-langx-types",
@@ -3583,6 +3733,31 @@ define('skylark-langx-objects/clone',[
     }
 
     return objects.clone = clone;
+});
+define('skylark-langx-objects/defaults',[
+    "./objects",
+    "./all-keys"
+],function(objects,allKeys){
+  // An internal function for creating assigner functions.
+  function createAssigner(keysFunc, defaults) {
+      return function(obj) {
+        var length = arguments.length;
+        if (defaults) obj = Object(obj);  
+        if (length < 2 || obj == null) return obj;
+        for (var index = 1; index < length; index++) {
+          var source = arguments[index],
+              keys = keysFunc(source),
+              l = keys.length;
+          for (var i = 0; i < l; i++) {
+            var key = keys[i];
+            if (!defaults || obj[key] === void 0) obj[key] = source[key];
+          }
+        }
+        return obj;
+     };
+  }
+  
+  return objects.defaults = createAssigner(allKeys, true);
 });
 define('skylark-langx-objects/each',[
     "./objects"
@@ -3723,6 +3898,47 @@ define('skylark-langx-objects/extend',[
     }
 
     return objects.extend = extend;
+});
+define('skylark-langx-objects/for-each',[
+ 	"./objects",
+ 	"./each"
+],function(objects,each){
+
+    function forEach (obj, fn) {
+    	if (!obj) {
+    		return;
+    	}
+     	if (obj.forEach) {
+     		obj.forEach(fn);
+     	} else {
+     		each(obj,fn,true);
+     	}
+    }
+
+	return objects.forEach = forEach;
+});
+define('skylark-langx-objects/has',[
+    "skylark-langx-types",
+    "./objects"
+],function(types,objects){
+    var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+    function has(obj, path) {
+        if (!types.isArray(path)) {
+            return obj != null && hasOwnProperty.call(obj, path);
+        }
+        var length = path.length;
+        for (var i = 0; i < length; i++) {
+            var key = path[i];
+            if (obj == null || !hasOwnProperty.call(obj, key)) {
+                return false;
+            }
+            obj = obj[key];
+        }
+        return !!length;
+    }
+
+    return objects.has = has;
 });
 define('skylark-langx-objects/includes',[
     "./objects"
@@ -3898,9 +4114,47 @@ define('skylark-langx-objects/is-equal',[
     return objects.isEqual = isEqual;
 	
 });
+define('skylark-langx-objects/keys',[
+    "skylark-langx-types",
+    "./objects",
+    "./has"
+],function(types,objects,has){
+
+    // Retrieve the names of an object's own properties.
+    // Delegates to **ECMAScript 5**'s native `Object.keys`.
+    function keys(obj) {
+        if (!types.isObject(obj)) return [];  
+        var keys = [];
+        for (var key in obj) if (has(obj, key)) keys.push(key);
+        return keys;
+    }
+
+    return objects.keys = keys;
+});
+define('skylark-langx-objects/is-match',[
+    "skylark-langx-types",
+    "./objects",
+    "./keys"
+],function(types,objects,keys) {
+
+    // Returns whether an object has a given set of `key:value` pairs.
+    function isMatch(object, attrs) {
+        var keys = keys(attrs), length = keys.length;
+        if (object == null) return !length;
+        var obj = Object(object);
+        for (var i = 0; i < length; i++) {
+          var key = keys[i];
+          if (attrs[key] !== obj[key] || !(key in obj)) return false;
+        }
+        return true;
+    }    
+
+    return objects.isMatch = isMatch;
+});
 define('skylark-langx-objects/omit',[
-    "./objects"
-],function(objects) {
+    "./objects",
+    "./mixin"
+],function(objects,mixin) {
 
    // Return a copy of the object without the blacklisted properties.
     function omit(obj, prop1,prop2) {
@@ -3941,35 +4195,89 @@ define('skylark-langx-objects/pick',[
     
     return objects.pick = pick;
 });
+define('skylark-langx-objects/remove-items',[
+    "skylark-langx-types",
+    "./objects"
+],function(types,objects){
+    function removeItem(items, item) {
+        if (types.isArray(items)) {
+            var idx = items.indexOf(item);
+            if (idx != -1) {
+                items.splice(idx, 1);
+            }
+        } else if (types.isPlainObject(items)) {
+            for (var key in items) {
+                if (items[key] == item) {
+                    delete items[key];
+                    break;
+                }
+            }
+        }
+
+        return this;
+    }
+
+    return objects.removeItem = removeItem;
+});
 define('skylark-langx-objects/result',[
-	"skylark-langx-types",
-	"./objects"
-],function(types,objects) {
+  "skylark-langx-types",
+  "./objects",
+  "./to-key",
+  "./_cast_path"
+],function(types,objects,toKey,castPath) {
 	var isArray = types.isArray,
 		isFunction = types.isFunction;
 
-    function result(obj, path, fallback) {
-        if (!isArray(path)) {
-            path = path.split(".");//[path]
-        };
-        var length = path.length;
-        if (!length) {
-          return isFunction(fallback) ? fallback.call(obj) : fallback;
-        }
-        for (var i = 0; i < length; i++) {
-          var prop = obj == null ? void 0 : obj[path[i]];
-          if (prop === void 0) {
-            prop = fallback;
-            i = length; // Ensure we don't continue iterating.
-          }
-          obj = isFunction(prop) ? prop.call(obj) : prop;
-        }
+  /**
+   * This method is like `get` except that if the resolved value is a
+   * function it's invoked with the `this` binding of its parent object and
+   * its result is returned.
+   *
+   * @since 0.1.0
+   * @category Object
+   * @param {Object} object The object to query.
+   * @param {Array|string} path The path of the property to resolve.
+   * @param {*} [defaultValue] The value returned for `undefined` resolved values.
+   * @returns {*} Returns the resolved value.
+   * @example
+   *
+   * const object = { 'a': [{ 'b': { 'c1': 3, 'c2': () => 4 } }] }
+   *
+   * result(object, 'a[0].b.c1')
+   * // => 3
+   *
+   * result(object, 'a[0].b.c2')
+   * // => 4
+   *
+   * result(object, 'a[0].b.c3', 'default')
+   * // => 'default'
+   *
+   * result(object, 'a[0].b.c3', () => 'default')
+   * // => 'default'
+   */
+  function result(object, path, defaultValue) {
+    path = castPath(path, object)
 
-        return obj;
+    let index = -1
+    let length = path.length
+
+    // Ensure the loop is entered when path is empty.
+    if (!length) {
+      length = 1
+      object = undefined
     }
+    while (++index < length) {
+      let value = object == null ? undefined : object[toKey(path[index])]
+      if (value === undefined) {
+        index = length
+        value = defaultValue
+      }
+      object = isFunction(value) ? value.call(object) : value
+    }
+    return object
+  }
 
-    return objects.result = result;
-	
+  return objects.result = result;	
 });
 define('skylark-langx-objects/safe-mixin',[
 	"./objects",
@@ -3991,6 +4299,7 @@ define('skylark-langx-objects/safe-mixin',[
 define('skylark-langx-objects/scall',[
     "./objects"
 ],function(objects) {
+    const  slice = Array.prototype.slice;
 
     function scall(obj,method,arg1,arg2) {
         if (obj && obj[method]) {
@@ -4001,6 +4310,119 @@ define('skylark-langx-objects/scall',[
     }
 
     return objects.scall = scall;
+});
+define('skylark-langx-objects/is-index',[
+	"skylark-langx-types",
+	"./objects"
+],function(types,objects) {
+	/** Used as references for various `Number` constants. */
+	const MAX_SAFE_INTEGER = 9007199254740991
+
+	/** Used to detect unsigned integer values. */
+	const reIsUint = /^(?:0|[1-9]\d*)$/
+
+	/**
+	 * Checks if `value` is a valid array-like index.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+	 */
+	function isIndex(value, length) {
+	  const type = typeof value
+	  length = length == null ? MAX_SAFE_INTEGER : length
+
+	  return !!length &&
+	    (type === 'number' ||
+	      (type !== 'symbol' && reIsUint.test(value))) &&
+	        (value > -1 && value % 1 == 0 && value < length)
+	}
+
+	return objects.isIndex = isIndex;
+});
+define('skylark-langx-objects/set',[
+	"skylark-langx-types",
+	"./objects",
+	"./_cast_path",
+	"./is-index",
+	"./to-key"
+],function(types,objects,castPath,isIndex,toKey) {
+	/**
+	 * The base implementation of `set`.
+	 *
+	 * @private
+	 * @param {Object} object The object to modify.
+	 * @param {Array|string} path The path of the property to set.
+	 * @param {*} value The value to set.
+	 * @param {Function} [customizer] The function to customize path creation.
+	 * @returns {Object} Returns `object`.
+	 */
+	function baseSet(object, path, value, customizer) {
+	  if (!types.isObject(object)) {
+	    return object
+	  }
+	  path = castPath(path, object)
+
+	  const length = path.length
+	  const lastIndex = length - 1
+
+	  let index = -1
+	  let nested = object
+
+	  while (nested != null && ++index < length) {
+	    const key = toKey(path[index])
+	    let newValue = value
+
+	    if (index != lastIndex) {
+	      const objValue = nested[key]
+	      newValue = customizer ? customizer(objValue, key, nested) : undefined
+	      if (newValue === undefined) {
+	        newValue = types.isObject(objValue)
+	          ? objValue
+	          : (isIndex(path[index + 1]) ? [] : {})
+	      }
+	    }
+	    nested[key] = newValue; //  assignValues() lwf
+	    nested = nested[key];
+	  }
+	  return object
+	}
+
+	/**
+	 * Sets the value at `path` of `object`. If a portion of `path` doesn't exist,
+	 * it's created. Arrays are created for missing index properties while objects
+	 * are created for all other missing properties. Use `setWith` to customize
+	 * `path` creation.
+	 *
+	 * **Note:** This method mutates `object`.
+	 *
+	 * @since 3.7.0
+	 * @category Object
+	 * @param {Object} object The object to modify.
+	 * @param {Array|string} path The path of the property to set.
+	 * @param {*} value The value to set.
+	 * @returns {Object} Returns `object`.
+	 * @see has, hasIn, get, unset
+	 * @example
+	 *
+	 * const object = { 'a': [{ 'b': { 'c': 3 } }] }
+	 *
+	 * set(object, 'a[0].b.c', 4)
+	 * console.log(object.a[0].b.c)
+	 * // => 4
+	 *
+	 * set(object, ['x', '0', 'y', 'z'], 5)
+	 * console.log(object.x[0].y.z)
+	 * // => 5
+	 */
+	function set(object, path, value) {
+	  return object == null ? object : baseSet(object, path, value)
+	}
+
+
+	return objects.set = set;
+
 });
  define('skylark-langx-objects/shadow',[
 	"./objects"
@@ -4018,34 +4440,104 @@ define('skylark-langx-objects/scall',[
 
     return objects.shadow = shadow;
 });
+define('skylark-langx-objects/unset',[
+	"skylark-langx-types",
+	"./objects",
+	"./set"
+],function(types,objects,set) {
+
+	/**
+	 * Removes the property at `path` of `object`.
+	 *
+	 * **Note:** This method mutates `object`.
+	 *
+	 * @since 4.0.0
+	 * @category Object
+	 * @param {Object} object The object to modify.
+	 * @param {Array|string} path The path of the property to unset.
+	 * @returns {boolean} Returns `true` if the property is deleted, else `false`.
+	 * @see get, has, set
+	 * @example
+	 *
+	 * const object = { 'a': [{ 'b': { 'c': 7 } }] }
+	 * unset(object, 'a[0].b.c')
+	 * // => true
+	 *
+	 * console.log(object)
+	 * // => { 'a': [{ 'b': {} }] }
+	 *
+	 * unset(object, ['a', '0', 'b', 'c'])
+	 * // => true
+	 *
+	 * console.log(object)
+	 * // => { 'a': [{ 'b': {} }] }
+	 */
+	function unset(object, path) {
+	  return object == null ? true : set(object, path,undefined)
+	}
+
+	return objects.unset = unset;
+});
+define('skylark-langx-objects/values',[
+    "skylark-langx-types",
+    "./objects",
+    "./all-keys"
+],function(types,objects,allKeys){
+    // Retrieve the values of an object's properties.
+    function values(obj) {
+        var keys = allKeys(obj);
+        var length = keys.length;
+        var values = Array(length);
+        for (var i = 0; i < length; i++) {
+            values[i] = obj[keys[i]];
+        }
+        return values;
+    }
+
+    return objects.values = values;
+});
 define('skylark-langx-objects/main',[
 	"./objects",
+	"./all-keys",
+	"./assign",
+	"./base-at",
 	"./clone",
+	"./defaults",
 	"./each",
 	"./extend",
+	"./for-each",
+	"./get",
+	"./has",
 	"./includes",
 	"./is-equal",
+	"./is-key",
+	"./is-match",
+	"./keys",
 	"./mixin",
 	"./omit",
 	"./pick",
+	"./remove-items",
 	"./result",
 	"./safe-mixin",
 	"./scall",
-	"./shadow"
+	"./set",
+	"./shadow",
+	"./to-key",
+	"./unset",
+	"./values"
 ],function(objects){
 	return objects;
 });
 define('skylark-langx-objects', ['skylark-langx-objects/main'], function (main) { return main; });
 
 define('skylark-langx-arrays/arrays',[
-  "skylark-langx-ns",
-  "skylark-langx-types",
-  "skylark-langx-objects"
-],function(skylark,types,objects){
-    var filter = Array.prototype.filter,
-        find = Array.prototype.find,
-        isArrayLike = types.isArrayLike;
-
+  "skylark-langx-ns"
+],function(skylark){
+    return skylark.attach("langx.arrays");
+});
+define('skylark-langx-arrays/base-find-index',[
+  "./arrays"
+],function(arrays){
     /**
      * The base implementation of `_.findIndex` and `_.findLastIndex` without
      * support for iteratee shorthands.
@@ -4066,6 +4558,24 @@ define('skylark-langx-arrays/arrays',[
         }
       }
       return -1;
+    }
+
+    return arrays.baseFindIndex = baseFindIndex;
+});
+define('skylark-langx-arrays/base-indexof',[
+  "./arrays",
+  "./base-find-index"
+],function(arrays,baseFindIndex){
+
+    /**
+     * The base implementation of `isNaN` without support for number objects.
+     *
+     * @private
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is `NaN`, else `false`.
+     */
+    function baseIsNaN(value) {
+      return value !== value;
     }
 
     /**
@@ -4090,61 +4600,37 @@ define('skylark-langx-arrays/arrays',[
       }
       return -1;
     }
-
-    /**
-     * The base implementation of `isNaN` without support for number objects.
-     *
-     * @private
-     * @param {*} value The value to check.
-     * @returns {boolean} Returns `true` if `value` is `NaN`, else `false`.
-     */
-    function baseIsNaN(value) {
-      return value !== value;
+	
+	return arrays.baseIndexOf = baseIndexOf;
+});
+define('skylark-langx-arrays/filter',[
+  "./arrays"
+],function(arrays){
+   var _filter = Array.prototype.filter;
+ 
+    function filter(array,func) {
+      return _filter.call(array,func);
     }
 
+    return arrays.filter = filter;
+	
+});
+define('skylark-langx-arrays/compact',[
+  "./arrays",
+  "./filter"
+],function(arrays,filter){
 
     function compact(array) {
-        return filter.call(array, function(item) {
+        return filter(array, function(item) {
             return item != null;
         });
     }
 
-    function filter2(array,func) {
-      return filter.call(array,func);
-    }
-
-    function flatten(array) {
-        if (isArrayLike(array)) {
-            var result = [];
-            for (var i = 0; i < array.length; i++) {
-                var item = array[i];
-                if (isArrayLike(item)) {
-                    for (var j = 0; j < item.length; j++) {
-                        result.push(item[j]);
-                    }
-                } else {
-                    result.push(item);
-                }
-            }
-            return result;
-        } else {
-            return array;
-        }
-        //return array.length > 0 ? concat.apply([], array) : array;
-    }
-
-    function grep(array, callback) {
-        var out = [];
-
-        objects.each(array, function(i, item) {
-            if (callback(item, i)) {
-                out.push(item);
-            }
-        });
-
-        return out;
-    }
-
+    return arrays.compact = compact;
+});
+define('skylark-langx-arrays/in-array',[
+  "./arrays"
+],function(arrays){
     function inArray(item, array) {
         if (!array) {
             return -1;
@@ -4165,12 +4651,541 @@ define('skylark-langx-arrays/arrays',[
         return -1;
     }
 
+    return arrays.inArray = inArray;
+	
+});
+define('skylark-langx-arrays/contains',[
+  "./arrays",
+  "./in-array"
+],function(arrays,inArray){
+
+    function contains(array,item) {
+      return inArray(item,array);
+    }
+	
+	return arrays.contains = contains;
+});
+define('skylark-langx-funcs/rest-arguments',[
+	"./funcs"
+],function(funcs){
+
+  // Some functions take a variable number of arguments, or a few expected
+  // arguments at the beginning and then a variable number of values to operate
+  // on. This helper accumulates all remaining arguments past the function’s
+  // argument length (or an explicit `startIndex`), into an array that becomes
+  // the last argument. Similar to ES6’s "rest parameter".
+  function restArguments(func, startIndex) {
+    startIndex = startIndex == null ? func.length - 1 : +startIndex;
+    return function() {
+      var length = Math.max(arguments.length - startIndex, 0),
+          rest = Array(length),
+          index = 0;
+      for (; index < length; index++) {
+        rest[index] = arguments[index + startIndex];
+      }
+      switch (startIndex) {
+        case 0: return func.call(this, rest);
+        case 1: return func.call(this, arguments[0], rest);
+        case 2: return func.call(this, arguments[0], arguments[1], rest);
+      }
+      var args = Array(startIndex + 1);
+      for (index = 0; index < startIndex; index++) {
+        args[index] = arguments[index];
+      }
+      args[startIndex] = rest;
+      return func.apply(this, args);
+    };
+  }
+
+  return funcs.restArguments = restArguments;	
+});
+define('skylark-langx-funcs/bind-all',[
+	"./funcs",
+	"./rest-arguments"
+],function(funcs,restArguments){
+
+  // Bind a number of an object's methods to that object. Remaining arguments
+  // are the method names to be bound. Useful for ensuring that all callbacks
+  // defined on an object belong to it.
+  return funcs.bindAll = restArguments(function(obj, keys) {
+    ///keys = flatten(keys, false, false);
+    var index = keys.length;
+    if (index < 1) throw new Error('bindAll must be passed function names');
+    while (index--) {
+      var key = keys[index];
+      obj[key] = obj[key].bind(obj);
+    }
+  });
+
+});
+
+define('skylark-langx-funcs/debounce',[
+	"./funcs",
+    "./defer"
+],function(funcs,defer){
+   
+    function debounce(fn, wait,useAnimationFrame) {
+        var timeout,
+            defered,
+            debounced = function () {
+                var context = this, args = arguments;
+                var later = function () {
+                    timeout = null;
+                    if (useAnimationFrame) {
+                        defered = defer(fn,args,context);
+                    } else {
+                        fn.apply(context, args);
+                    }
+                };
+
+                cancel();
+                timeout = setTimeout(later, wait);
+
+                return {
+                    cancel 
+                };
+            },
+            cancel = debounced.cancel = function () {
+                if (timeout) {
+                    clearTimeout(timeout);
+                }
+                if (defered) {
+                    defered.cancel();
+                }
+                timeout = void 0;
+                defered = void 0;
+            };
+
+        return debounced;
+    }
+
+    return funcs.debounce = debounce;
+
+});
+define('skylark-langx-funcs/delegate',[
+  "skylark-langx-objects",
+  "./funcs"
+],function(objects,funcs){
+	var mixin = objects.mixin;
+
+    var delegate = (function() {
+        // boodman/crockford delegation w/ cornford optimization
+        function TMP() {}
+        return function(obj, props) {
+            TMP.prototype = obj;
+            var tmp = new TMP();
+            TMP.prototype = null;
+            if (props) {
+                mixin(tmp, props);
+            }
+            return tmp; // Object
+        };
+    })();
+
+    return funcs.delegate = delegate;
+
+});
+define('skylark-langx-funcs/loop',[
+	"./funcs"
+],function(funcs){
+
+	/**
+	 * Animation timer is a special type of timer that uses the requestAnimationFrame method.
+	 *
+	 * This timer calls the method with the same rate as the screen refesh rate.
+	 * 
+	 * Loop time can be changed dinamically.
+	 *
+	 * @class AnimationTimer
+	 * @param {Function} callback Timer callback function.
+	 */
+	function AnimationTimer(callback)
+	{
+		this.callback = callback;
+
+		this.running = false;
+		this.id = -1;
+	}
+
+	/**
+	 * Start timer, is the timer is already running dosen't do anything.
+	 * 
+	 * @method start
+	 */
+	AnimationTimer.prototype.start = function()
+	{
+		if(this.running)
+		{
+			return;
+		}
+
+		this.running = true;
+
+		var self = this;
+		function run()
+		{
+			self.callback();
+
+			if(self.running)
+			{
+				self.id = requestAnimationFrame(run);
+			}
+		}
+
+		run();
+	};
+
+	/**
+	 * Stop animation timer.
+	 * 
+	 * @method stop
+	 */
+	AnimationTimer.prototype.stop = function()
+	{
+		this.running = false;
+		cancelAnimationFrame(this.id);
+	};
+
+	function loop(fn) {
+		return new AnimationTimer(fn);
+    }
+
+    return funcs.loop = loop;
+});
+define('skylark-langx-funcs/negate',[
+	"./funcs"
+],function(funcs){
+   
+    /**
+     * Creates a function that negates the result of the predicate `func`. The
+     * `func` predicate is invoked with the `this` binding and arguments of the
+     * created function.
+     * @category Function
+     * @param {Function} predicate The predicate to negate.
+     * @returns {Function} Returns the new negated function.
+     * @example
+     *
+     * function isEven(n) {
+     *   return n % 2 == 0
+     * }
+     *
+     * filter([1, 2, 3, 4, 5, 6], negate(isEven))
+     * // => [1, 3, 5]
+     */
+    function negate(predicate) {
+      if (typeof predicate !== 'function') {
+        throw new TypeError('Expected a function')
+      }
+      return function(...args) {
+        return !predicate.apply(this, args)
+      }
+    }
+
+
+    return funcs.negate = negate;
+
+});
+define('skylark-langx-funcs/proxy',[
+  "skylark-langx-types",
+	"./funcs"
+],function(types,funcs){
+    var slice = Array.prototype.slice,
+        isFunction = types.isFunction,
+        isString = types.isString;
+
+    function proxy(fn, context) {
+        var args = (2 in arguments) && slice.call(arguments, 2)
+        if (isFunction(fn)) {
+            var proxyFn = function() {
+                return fn.apply(context, args ? args.concat(slice.call(arguments)) : arguments);
+            }
+            return proxyFn;
+        } else if (isString(context)) {
+            if (args) {
+                args.unshift(fn[context], fn)
+                return proxy.apply(null, args)
+            } else {
+                return proxy(fn[context], fn);
+            }
+        } else {
+            throw new TypeError("expected function");
+        }
+    }
+
+    return funcs.bind = funcs.proxy = proxy;
+
+});
+define('skylark-langx-funcs/template',[
+  "skylark-langx-objects",
+  "./funcs",
+  "./proxy"
+],function(objects,funcs,proxy){
+    //ref : underscore
+    var slice = Array.prototype.slice;
+   
+    // By default, Underscore uses ERB-style template delimiters, change the
+    // following template settings to use alternative delimiters.
+    var templateSettings = {
+        evaluate: /<%([\s\S]+?)%>/g,
+        interpolate: /<%=([\s\S]+?)%>/g,
+        escape: /<%-([\s\S]+?)%>/g
+    };
+
+    // When customizing `templateSettings`, if you don't want to define an
+    // interpolation, evaluation or escaping regex, we need one that is
+    // guaranteed not to match.
+    var noMatch = /(.)^/;
+
+
+    // Certain characters need to be escaped so that they can be put into a
+    // string literal.
+    var escapes = {
+      "'":      "'",
+      '\\':     '\\',
+      '\r':     'r',
+      '\n':     'n',
+      '\t':     't',
+      '\u2028': 'u2028',
+      '\u2029': 'u2029'
+    };
+
+    var escaper = /\\|'|\r|\n|\t|\u2028|\u2029/g;
+
+
+    function template(text, settings) {
+        var render;
+        settings = objects.defaults({}, settings,templateSettings);
+
+        // Combine delimiters into one regular expression via alternation.
+        var matcher = RegExp([
+          (settings.escape || noMatch).source,
+          (settings.interpolate || noMatch).source,
+          (settings.evaluate || noMatch).source
+        ].join('|') + '|$', 'g');
+
+        // Compile the template source, escaping string literals appropriately.
+        var index = 0;
+        var source = "__p+='";
+        text.replace(matcher, function(match, escape, interpolate, evaluate, offset) {
+          source += text.slice(index, offset)
+              .replace(escaper, function(match) { return '\\' + escapes[match]; });
+
+          if (escape) {
+            source += "'+\n((__t=(" + escape + "))==null?'':_.escape(__t))+\n'";
+          }
+          if (interpolate) {
+            source += "'+\n((__t=(" + interpolate + "))==null?'':__t)+\n'";
+          }
+          if (evaluate) {
+            source += "';\n" + evaluate + "\n__p+='";
+          }
+          index = offset + match.length;
+          return match;
+        });
+        source += "';\n";
+
+        // If a variable is not specified, place data values in local scope.
+        if (!settings.variable) source = 'with(obj||{}){\n' + source + '}\n';
+
+        source = "var __t,__p='',__j=Array.prototype.join," +
+          "print=function(){__p+=__j.call(arguments,'');};\n" +
+          source + 'return __p;\n';
+
+        try {
+          render = new Function(settings.variable || 'obj', '_', source);
+        } catch (e) {
+          e.source = source;
+          throw e;
+        }
+
+        ///if (data) {
+        ///  return render(data,this)
+        ///}
+        
+        var template = proxy(function(data) {
+          return render.call(this, data,this);
+        },this);
+
+        // Provide the compiled source as a convenience for precompilation.
+        var argument = settings.variable || 'obj';
+        template.source = 'function(' + argument + '){\n' + source + '}';
+
+        return template;
+    }
+
+    template.templateSettings = funcs.templateSettings = templateSettings;
+
+    return funcs.template = template;
+
+});
+define('skylark-langx-funcs/throttle',[
+  "./funcs"
+],function(funcs){
+
+    const throttle = function (fn, wait) {
+        let last = window.performance.now();
+        const throttled = function (...args) {
+            const now = window.performance.now();
+            if (now - last >= wait) {
+                fn(...args);
+                last = now;
+            }
+        };
+        return throttled;
+    };
+
+    /*
+    function throttle(func, delay) {
+        var timer = null;
+
+        return function() {
+            var context = this,
+                args = arguments;
+
+            if ( timer === null ) {
+                timer = setTimeout(function() {
+                    func.apply(context, args);
+                    timer = null;
+                }, delay);
+            }
+        };
+    }
+    */
+
+
+    return funcs.throttle = throttle;
+});
+define('skylark-langx-funcs/main',[
+	"./funcs",
+	"./bind-all",
+	"./debounce",
+	"./defer",
+	"./delegate",
+	"./loop",
+	"./negate",
+	"./proxy",
+	"./rest-arguments",
+	"./template",
+	"./throttle"
+],function(funcs){
+	return funcs;
+});
+define('skylark-langx-funcs', ['skylark-langx-funcs/main'], function (main) { return main; });
+
+define('skylark-langx-arrays/flatten',[
+  "skylark-langx-types",
+  "./arrays"
+],function(types,arrays){
+
+    function flatten(array) {
+        if (types.isArrayLike(array)) {
+            var result = [];
+            for (var i = 0; i < array.length; i++) {
+                var item = array[i];
+                if (types.isArrayLike(item)) {
+                    for (var j = 0; j < item.length; j++) {
+                        result.push(item[j]);
+                    }
+                } else {
+                    result.push(item);
+                }
+            }
+            return result;
+        } else {
+            return array;
+        }
+        //return array.length > 0 ? concat.apply([], array) : array;
+    }
+
+    return arrays.flatten = flatten;
+});
+define('skylark-langx-arrays/difference',[
+  "skylark-langx-funcs",
+  "./arrays",
+  "./flatten",
+  "./filter",
+  "./contains"
+],function(funcs,arrays,flatten,filter,contains){
+   // Take the difference between one array and a number of other arrays.
+    // Only the elements present in just the first array will remain.
+    var difference  = funcs.restArguments(function(array, rest) {
+      rest = flatten(rest, true, true);
+      return filter(array, function(value){
+        return !contains(rest, value);
+      });
+    });
+
+    return arrays.difference = difference;
+	
+});
+define('skylark-langx-arrays/find',[
+  "./arrays"
+],function(arrays){
+    var _find = Array.prototype.find;
+
+    function find(array,func) {
+      return _find.call(array,func);
+    }
+
+    return arrays.find = find;
+});
+define('skylark-langx-arrays/first',[
+  "./arrays"
+],function(arrays){
+    function first(items,n) {
+      if (n) {
+          return items.slice(0,n);
+      } else {
+          return items[0];
+      }
+    }
+
+    return arrays.first = first;
+});
+define('skylark-langx-arrays/grep',[
+  "skylark-langx-objects",
+  "./arrays"
+],function(objects,arrays){
+    function grep(array, callback) {
+        var out = [];
+
+        objects.each(array, function(i, item) {
+            if (callback(item, i)) {
+                out.push(item);
+            }
+        });
+
+        return out;
+    }
+
+    return arrays.grep = grep;
+});
+define('skylark-langx-arrays/indexof',[
+  "./arrays"
+],function(arrays){
+
     function indexOf(array,item) {
       return array.indexOf(item);
     }
 
+    return arrays.indexOf = indexOf;
+});
+define('skylark-langx-arrays/last',[
+  "./arrays"
+],function(arrays){
+    // Get the last element of an array. 
+    function last(arr) {
+        return arr[arr.length - 1];     
+    }
+
+    return arrays.last = last;
+});
+define('skylark-langx-arrays/make-array',[
+	"skylark-langx-types",
+ 	"./arrays"
+],function(types,arrays){
     function makeArray(obj, offset, startWith) {
-       if (isArrayLike(obj) ) {
+       if (types.isArrayLike(obj) ) {
         return (startWith || []).concat(Array.prototype.slice.call(obj, offset || 0));
       }
 
@@ -4178,20 +5193,17 @@ define('skylark-langx-arrays/arrays',[
       return [ obj ];             
     }
 
-
-    function forEach (arr, fn) {
-      if (arr.forEach) return arr.forEach(fn)
-      for (var i = 0; i < arr.length; i++) fn(arr[i], i);
-    }
-
-    function last(arr) {
-        return arr[arr.length - 1];     
-    }
-
+	return arrays.makeArray = makeArray;	
+});
+define('skylark-langx-arrays/map',[
+	"skylark-langx-types",
+  	"./arrays",
+  	"./flatten"
+],function(types,arrays,flatten){
     function map(elements, callback) {
         var value, values = [],
             i, key
-        if (isArrayLike(elements))
+        if (types.isArrayLike(elements))
             for (i = 0; i < elements.length; i++) {
                 value = callback.call(elements[i], elements[i], i);
                 if (value != null) values.push(value)
@@ -4204,6 +5216,11 @@ define('skylark-langx-arrays/arrays',[
         return flatten(values)
     }
 
+    return arrays.map = map;
+});
+define('skylark-langx-arrays/merge',[
+  "./arrays"
+],function(arrays){
 
     function merge( first, second ) {
       var l = second.length,
@@ -4225,67 +5242,113 @@ define('skylark-langx-arrays/arrays',[
       return first;
     }
 
+    return arrays.merge = merge;
+	
+});
+define('skylark-langx-arrays/pull-at',[
+  "skylark-langx-types",
+  "skylark-langx-objects",
+  "./arrays"
+],function(types,objects,arrays){
+
+	/**
+	 * Removes elements from `array` corresponding to `indexes` and returns an
+	 * array of removed elements.
+	 *
+	 * **Note:** Unlike `at`, this method mutates `array`.
+	 *
+	 * @category Array
+	 * @param {Array} array The array to modify.
+	 * @param {...(number|number[])} [indexes] The indexes of elements to remove.
+	 * @returns {Array} Returns the new array of removed elements.
+	 * @see pull, pullAll, pullAllBy, pullAllWith, remove, reject
+	 * @example
+	 *
+	 * const array = ['a', 'b', 'c', 'd']
+	 * const pulled = pullAt(array, [1, 3])
+	 *
+	 * console.log(array)
+	 * // => ['a', 'c']
+	 *
+	 * console.log(pulled)
+	 * // => ['b', 'd']
+	 */
+	function pullAt(array, ...indexes) {
+	  const length = array == null ? 0 : array.length
+	  const result = objects.baseAt(array, indexes)
+
+	  indexes.sort(function(a, b) {
+  		return a - b;
+	  });
+
+	  for (let i= indexes.length-1;i>=0;i--) {
+	  	array.slice(indexes[i],1);
+	  }
+
+	  return result
+	}
+
+	return arrays.pullAt = pullAt;
+});
+
+define('skylark-langx-arrays/reduce',[
+  "./arrays"
+],function(arrays){
+
     function reduce(array,callback,initialValue) {
         return Array.prototype.reduce.call(array,callback,initialValue);
     }
 
+    return arrays.reduce = reduce;	
+});
+define('skylark-langx-arrays/uniq',[
+  "./arrays",
+  "./filter"
+],function(arrays,filter){
+
     function uniq(array) {
-        return filter.call(array, function(item, idx) {
+        return filter(array, function(item, idx) {
             return array.indexOf(item) == idx;
         })
     }
+	
+	return arrays.uniq = uniq;
+});
+define('skylark-langx-arrays/without',[
+	"skylark-langx-funcs",
+  "./arrays",
+  "./difference"
+],function(funcs,arrays,difference){
 
-    function find2(array,func) {
-      return find.call(array,func);
-    }
-
-    return skylark.attach("langx.arrays",{
-        baseFindIndex: baseFindIndex,
-
-        baseIndexOf : baseIndexOf,
-        
-        compact: compact,
-
-        first : function(items,n) {
-            if (n) {
-                return items.slice(0,n);
-            } else {
-                return items[0];
-            }
-        },
-
-        filter : filter2,
-
-        find : find2,
-        
-        flatten: flatten,
-
-        grep: grep,
-
-        inArray: inArray,
-
-        indexOf : indexOf,
-
-        makeArray: makeArray, // 
-
-        toArray : makeArray,
-
-        last : last,
-
-        merge : merge,
-
-        forEach : forEach,
-
-        map : map,
-        
-        reduce : reduce,
-
-        uniq : uniq
-
+    // Return a version of the array that does not contain the specified value(s).
+    var without = funcs.restArguments(function(array, otherArrays) {
+      return difference(array, otherArrays);
     });
+
+    return arrays.without = without;
 });
 define('skylark-langx-arrays/main',[
-	"./arrays"
+	"./arrays",
+	"./base-find-index",
+	"./base-indexof",
+	"./compact",
+	"./contains",
+	"./difference",
+	"./filter",
+	"./find",
+	"./first",
+	"./flatten",
+	"./grep",
+	"./in-array",
+	"./indexof",
+	"./last",
+	"./make-array",
+	"./map",
+	"./merge",
+	"./pull-at",
+	"./reduce",
+	"./uniq",
+	"./without"
 ],function(arrays){
 	return arrays;
 });
@@ -8358,361 +9421,17 @@ define('skylark-data-files/providers/dropbox/dropbox-provider',[
     return  files.providers.DropboxProvider= DropboxProvider;
     
 });
-define('skylark-langx-funcs/debounce',[
-	"./funcs",
-    "./defer"
-],function(funcs,defer){
-   
-    function debounce(fn, wait,useAnimationFrame) {
-        var timeout,
-            defered,
-            debounced = function () {
-                var context = this, args = arguments;
-                var later = function () {
-                    timeout = null;
-                    if (useAnimationFrame) {
-                        defered = defer(fn,args,context);
-                    } else {
-                        fn.apply(context, args);
-                    }
-                };
-
-                cancel();
-                timeout = setTimeout(later, wait);
-
-                return {
-                    cancel 
-                };
-            },
-            cancel = debounced.cancel = function () {
-                if (timeout) {
-                    clearTimeout(timeout);
-                }
-                if (defered) {
-                    defered.cancel();
-                }
-                timeout = void 0;
-                defered = void 0;
-            };
-
-        return debounced;
-    }
-
-    return funcs.debounce = debounce;
-
+define('skylark-langx-async/async',[
+    "skylark-langx-ns"
+],function(skylark){
+	return skylark.attach("langx.async");	
 });
-define('skylark-langx-funcs/delegate',[
-  "skylark-langx-objects",
-  "./funcs"
-],function(objects,funcs){
-	var mixin = objects.mixin;
-
-    var delegate = (function() {
-        // boodman/crockford delegation w/ cornford optimization
-        function TMP() {}
-        return function(obj, props) {
-            TMP.prototype = obj;
-            var tmp = new TMP();
-            TMP.prototype = null;
-            if (props) {
-                mixin(tmp, props);
-            }
-            return tmp; // Object
-        };
-    })();
-
-    return funcs.delegate = delegate;
-
-});
-define('skylark-langx-funcs/loop',[
-	"./funcs"
-],function(funcs){
-
-	/**
-	 * Animation timer is a special type of timer that uses the requestAnimationFrame method.
-	 *
-	 * This timer calls the method with the same rate as the screen refesh rate.
-	 * 
-	 * Loop time can be changed dinamically.
-	 *
-	 * @class AnimationTimer
-	 * @param {Function} callback Timer callback function.
-	 */
-	function AnimationTimer(callback)
-	{
-		this.callback = callback;
-
-		this.running = false;
-		this.id = -1;
-	}
-
-	/**
-	 * Start timer, is the timer is already running dosen't do anything.
-	 * 
-	 * @method start
-	 */
-	AnimationTimer.prototype.start = function()
-	{
-		if(this.running)
-		{
-			return;
-		}
-
-		this.running = true;
-
-		var self = this;
-		function run()
-		{
-			self.callback();
-
-			if(self.running)
-			{
-				self.id = requestAnimationFrame(run);
-			}
-		}
-
-		run();
-	};
-
-	/**
-	 * Stop animation timer.
-	 * 
-	 * @method stop
-	 */
-	AnimationTimer.prototype.stop = function()
-	{
-		this.running = false;
-		cancelAnimationFrame(this.id);
-	};
-
-	function loop(fn) {
-		return new AnimationTimer(fn);
-    }
-
-    return funcs.loop = loop;
-});
-define('skylark-langx-funcs/negate',[
-	"./funcs"
-],function(funcs){
-   
-    /**
-     * Creates a function that negates the result of the predicate `func`. The
-     * `func` predicate is invoked with the `this` binding and arguments of the
-     * created function.
-     * @category Function
-     * @param {Function} predicate The predicate to negate.
-     * @returns {Function} Returns the new negated function.
-     * @example
-     *
-     * function isEven(n) {
-     *   return n % 2 == 0
-     * }
-     *
-     * filter([1, 2, 3, 4, 5, 6], negate(isEven))
-     * // => [1, 3, 5]
-     */
-    function negate(predicate) {
-      if (typeof predicate !== 'function') {
-        throw new TypeError('Expected a function')
-      }
-      return function(...args) {
-        return !predicate.apply(this, args)
-      }
-    }
-
-
-    return funcs.negate = negate;
-
-});
-define('skylark-langx-funcs/proxy',[
-  "skylark-langx-types",
-	"./funcs"
-],function(types,funcs){
-    var slice = Array.prototype.slice,
-        isFunction = types.isFunction,
-        isString = types.isString;
-
-    function proxy(fn, context) {
-        var args = (2 in arguments) && slice.call(arguments, 2)
-        if (isFunction(fn)) {
-            var proxyFn = function() {
-                return fn.apply(context, args ? args.concat(slice.call(arguments)) : arguments);
-            }
-            return proxyFn;
-        } else if (isString(context)) {
-            if (args) {
-                args.unshift(fn[context], fn)
-                return proxy.apply(null, args)
-            } else {
-                return proxy(fn[context], fn);
-            }
-        } else {
-            throw new TypeError("expected function");
-        }
-    }
-
-    return funcs.bind = funcs.proxy = proxy;
-
-});
-define('skylark-langx-funcs/template',[
-  "skylark-langx-objects",
-  "./funcs",
-  "./proxy"
-],function(objects,funcs,proxy){
-    //ref : underscore
-    var slice = Array.prototype.slice;
-   
-    // By default, Underscore uses ERB-style template delimiters, change the
-    // following template settings to use alternative delimiters.
-    var templateSettings = {
-        evaluate: /<%([\s\S]+?)%>/g,
-        interpolate: /<%=([\s\S]+?)%>/g,
-        escape: /<%-([\s\S]+?)%>/g
-    };
-
-    // When customizing `templateSettings`, if you don't want to define an
-    // interpolation, evaluation or escaping regex, we need one that is
-    // guaranteed not to match.
-    var noMatch = /(.)^/;
-
-
-    // Certain characters need to be escaped so that they can be put into a
-    // string literal.
-    var escapes = {
-      "'":      "'",
-      '\\':     '\\',
-      '\r':     'r',
-      '\n':     'n',
-      '\t':     't',
-      '\u2028': 'u2028',
-      '\u2029': 'u2029'
-    };
-
-    var escaper = /\\|'|\r|\n|\t|\u2028|\u2029/g;
-
-
-    function template(text, data, settings) {
-        var render;
-        settings = objects.defaults({}, settings,templateSettings);
-
-        // Combine delimiters into one regular expression via alternation.
-        var matcher = RegExp([
-          (settings.escape || noMatch).source,
-          (settings.interpolate || noMatch).source,
-          (settings.evaluate || noMatch).source
-        ].join('|') + '|$', 'g');
-
-        // Compile the template source, escaping string literals appropriately.
-        var index = 0;
-        var source = "__p+='";
-        text.replace(matcher, function(match, escape, interpolate, evaluate, offset) {
-          source += text.slice(index, offset)
-              .replace(escaper, function(match) { return '\\' + escapes[match]; });
-
-          if (escape) {
-            source += "'+\n((__t=(" + escape + "))==null?'':_.escape(__t))+\n'";
-          }
-          if (interpolate) {
-            source += "'+\n((__t=(" + interpolate + "))==null?'':__t)+\n'";
-          }
-          if (evaluate) {
-            source += "';\n" + evaluate + "\n__p+='";
-          }
-          index = offset + match.length;
-          return match;
-        });
-        source += "';\n";
-
-        // If a variable is not specified, place data values in local scope.
-        if (!settings.variable) source = 'with(obj||{}){\n' + source + '}\n';
-
-        source = "var __t,__p='',__j=Array.prototype.join," +
-          "print=function(){__p+=__j.call(arguments,'');};\n" +
-          source + 'return __p;\n';
-
-        try {
-          render = new Function(settings.variable || 'obj', '_', source);
-        } catch (e) {
-          e.source = source;
-          throw e;
-        }
-
-        if (data) {
-          return render(data,this)
-        }
-        var template = proxy(function(data) {
-          return render.call(this, data,this);
-        },this);
-
-        // Provide the compiled source as a convenience for precompilation.
-        var argument = settings.variable || 'obj';
-        template.source = 'function(' + argument + '){\n' + source + '}';
-
-        return template;
-    }
-
-    template.templateSettings = funcs.templateSettings = templateSettings;
-
-    return funcs.template = template;
-
-});
-define('skylark-langx-funcs/throttle',[
-  "./funcs"
-],function(funcs){
-
-    const throttle = function (fn, wait) {
-        let last = window.performance.now();
-        const throttled = function (...args) {
-            const now = window.performance.now();
-            if (now - last >= wait) {
-                fn(...args);
-                last = now;
-            }
-        };
-        return throttled;
-    };
-
-    /*
-    function throttle(func, delay) {
-        var timer = null;
-
-        return function() {
-            var context = this,
-                args = arguments;
-
-            if ( timer === null ) {
-                timer = setTimeout(function() {
-                    func.apply(context, args);
-                    timer = null;
-                }, delay);
-            }
-        };
-    }
-    */
-
-
-    return funcs.throttle = throttle;
-});
-define('skylark-langx-funcs/main',[
-	"./funcs",
-	"./debounce",
-	"./defer",
-	"./delegate",
-	"./loop",
-	"./negate",
-	"./proxy",
-	"./template",
-	"./throttle"
-],function(funcs){
-	return funcs;
-});
-define('skylark-langx-funcs', ['skylark-langx-funcs/main'], function (main) { return main; });
-
 define('skylark-langx-async/deferred',[
     "skylark-langx-arrays",
-	"skylark-langx-funcs",
-    "skylark-langx-objects"
-],function(arrays,funcs,objects){
+    "skylark-langx-funcs",
+    "skylark-langx-objects",
+    "./async"
+],function(arrays,funcs,objects,async){
     "use strict";
 
     var slice = Array.prototype.slice,
@@ -8991,69 +9710,112 @@ define('skylark-langx-async/deferred',[
         return d.promise;
     };
 
-    return Deferred;
+    return async.Deferred = Deferred;
 });
-define('skylark-langx-async/async',[
-    "skylark-langx-ns",
+define('skylark-langx-async/each',[
+	"./async"
+],function(async){
+
+	function each(items, next, callback) {
+		if (items.length === 0) return callback(undefined, items);
+
+		var transformed = new Array(items.length);
+		var count = 0;
+		var returned = false;
+
+		items.forEach(function(item, index) {
+			next(item, function(error, transformedItem) {
+		    	if (returned) return;
+		    	if (error) {
+		      		returned = true;
+		      		return callback(error);
+		    	}
+		    	transformed[index] = transformedItem;
+		    	count += 1;
+		    	if (count === items.length) {
+		    		return callback(undefined, transformed);
+		    	}
+			});
+		});
+	}
+
+	return async.each = each;
+
+});
+define('skylark-langx-async/parallel',[
     "skylark-langx-objects",
+    "./async",
     "./deferred"
-],function(skylark,objects,Deferred){
-    var each = objects.each;
-    
-    var async = {
-        Deferred : Deferred,
+],function(objects,async,Deferred){
+    function parallel(arr,args,ctx) {
+        var rets = [];
+        ctx = ctx || null;
+        args = args || [];
 
-        parallel : function(arr,args,ctx) {
-            var rets = [];
-            ctx = ctx || null;
-            args = args || [];
+        objects.each(arr,function(i,func){
+            rets.push(func.apply(ctx,args));
+        });
 
-            each(arr,function(i,func){
-                rets.push(func.apply(ctx,args));
+        return Deferred.all(rets);
+    }
+
+	return async.parallel = parallel;
+});
+define('skylark-langx-async/series',[
+    "skylark-langx-objects",
+    "./async",
+    "./deferred"
+],function(objects,async,Deferred){
+     function series(arr,args,ctx) {
+        var rets = [],
+            d = new Deferred(),
+            p = d.promise;
+
+        ctx = ctx || null;
+        args = args || [];
+
+        d.resolve();
+        objects.each(arr,function(i,func){
+            p = p.then(function(){
+                return func.apply(ctx,args);
             });
+            rets.push(p);
+        });
 
-            return Deferred.all(rets);
-        },
+        return Deferred.all(rets);
+    }
 
-        series : function(arr,args,ctx) {
-            var rets = [],
-                d = new Deferred(),
-                p = d.promise;
+	return async.series = series;
+});
+define('skylark-langx-async/waterful',[
+    "skylark-langx-objects",
+    "./async",
+    "./deferred"
+],function(objects,async,Deferred){
+    function waterful(arr,args,ctx) {
+        var d = new Deferred(),
+            p = d.promise;
 
-            ctx = ctx || null;
-            args = args || [];
+        ctx = ctx || null;
+        args = args || [];
 
-            d.resolve();
-            each(arr,function(i,func){
-                p = p.then(function(){
-                    return func.apply(ctx,args);
-                });
-                rets.push(p);
-            });
+        d.resolveWith(ctx,args);
 
-            return Deferred.all(rets);
-        },
+        objects.each(arr,function(i,func){
+            p = p.then(func);
+        });
+        return p;
+    }
 
-        waterful : function(arr,args,ctx) {
-            var d = new Deferred(),
-                p = d.promise;
-
-            ctx = ctx || null;
-            args = args || [];
-
-            d.resolveWith(ctx,args);
-
-            each(arr,function(i,func){
-                p = p.then(func);
-            });
-            return p;
-        }
-    };
-
-	return skylark.attach("langx.async",async);	
+	return async.waterful = waterful;
 });
 define('skylark-langx-async/main',[
-	"./async"
+	"./async",
+	"./deferred",
+	"./each",
+	"./parallel",
+	"./series",
+	"./waterful"
 ],function(async){
 	return async;
 });
@@ -14069,5 +14831,5 @@ define('skylark-data-files/main',[
 define('skylark-data-files', ['skylark-data-files/main'], function (main) { return main; });
 
 
-},this);
+},this,define,require);
 //# sourceMappingURL=sourcemaps/skylark-data-files-all.js.map

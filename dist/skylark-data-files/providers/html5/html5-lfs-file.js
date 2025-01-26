@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["../../utils","../../preload-file"],function(r,e){"use strict";const{buffer2ArrayBuffer:t,arrayBuffer2Buffer:n}=r;return class extends e{constructor(r,e,t,n,s,i){super(r,t,n,s,i),this._entry=e}sync(r){if(!this.isDirty())return r();this._entry.createWriter(e=>{const n=this.getBuffer(),s=new Blob([t(n)]),i=s.size;e.onwriteend=(t=>{e.onwriteend=null,e.onerror=null,e.truncate(i),this.resetDirty(),r()}),e.onerror=(e=>{r(convertError(e,this.getPath(),!1))}),e.write(s)})}close(r){this.sync(r)}}});
+define(["../../utils","../../preload-file"],function(r,e){"use strict";const s=r["buffer2ArrayBuffer"];class t extends e{constructor(r,e,t,n,s,i){super(r,t,n,s,i),this._entry=e}sync(n){if(!this.isDirty())return n();this._entry.createWriter(e=>{var r=this.getBuffer(),r=new Blob([s(r)]);const t=r.size;e.onwriteend=r=>{e.onwriteend=null,e.onerror=null,e.truncate(t),this.resetDirty(),n()},e.onerror=r=>{n(convertError(r,this.getPath(),!1))},e.write(r)})}close(r){this.sync(r)}}return t});
 //# sourceMappingURL=../../sourcemaps/providers/html5/html5-lfs-file.js.map

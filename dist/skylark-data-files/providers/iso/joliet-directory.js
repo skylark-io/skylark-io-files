@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["./directory","./joliet-directory-record"],function(r,e){"use strict";return class extends r{constructor(r,e){super(r,e)}_constructDirectoryRecord(r){return new e(r,this._record.getRockRidgeOffset())}}});
+define(["./directory","./joliet-directory-record"],function(r,e){"use strict";class t extends r{constructor(r,e){super(r,e)}_constructDirectoryRecord(r){return new e(r,this._record.getRockRidgeOffset())}}return t});
 //# sourceMappingURL=../../sourcemaps/providers/iso/joliet-directory.js.map

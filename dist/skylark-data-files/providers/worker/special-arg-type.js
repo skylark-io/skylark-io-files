@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define([],function(){var R;return function(R){R[R.CB=0]="CB",R[R.FD=1]="FD",R[R.API_ERROR=2]="API_ERROR",R[R.STATS=3]="STATS",R[R.PROBE=4]="PROBE",R[R.FILEFLAG=5]="FILEFLAG",R[R.BUFFER=6]="BUFFER",R[R.ERROR=7]="ERROR"}(R||(R={})),R});
+define([],function(){var R,E;return(E=R=R||{})[E.CB=0]="CB",E[E.FD=1]="FD",E[E.API_ERROR=2]="API_ERROR",E[E.STATS=3]="STATS",E[E.PROBE=4]="PROBE",E[E.FILEFLAG=5]="FILEFLAG",E[E.BUFFER=6]="BUFFER",E[E.ERROR=7]="ERROR",R});
 //# sourceMappingURL=../../sourcemaps/providers/worker/special-arg-type.js.map
